@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "test": "npx tsx scripts/test_user_journeys.ts",
+    "test:audit": "npx tsx scripts/test_user_journeys.ts",
     "preview": "vite preview"
   },
   "dependencies": {

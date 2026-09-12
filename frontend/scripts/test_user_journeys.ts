@@ -40,8 +40,6 @@ if (!globalThis.sessionStorage) {
 
 // 2. Import API client and mock data
 import { api, isMockModeEnabled, setMockMode, axiosInstance } from "../src/api/client";
-import { DEMO_USERS, INITIAL_COMPLAINTS, MOCK_DOSSIERS, MOCK_SUPER_OVERVIEW } from "../src/api/mockData";
-import type { AuthorityOrg, OfficialStatus, ReviewPackage } from "../src/api/types";
 
 // Test Runner utilities
 let passedTests = 0;
