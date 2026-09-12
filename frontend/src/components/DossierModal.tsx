@@ -243,7 +243,7 @@ const DossierContent: React.FC<{
                       : "text-slate-600 hover:bg-slate-200"
                   }`}
                 >
-                  Urdu Memo (????)
+                  Urdu Memo (اردو)
                 </button>
               </div>
             </div>
@@ -296,7 +296,7 @@ const DossierContent: React.FC<{
                       : "bg-white border-slate-300 text-slate-700 hover:bg-slate-100"
                   }`}
                 >
-                  ? PENDING
+                  ⏳ PENDING
                 </button>
                 <button
                   type="button"
@@ -307,7 +307,7 @@ const DossierContent: React.FC<{
                       : "bg-white border-slate-300 text-slate-700 hover:bg-slate-100"
                   }`}
                 >
-                  ??? IN PROGRESS
+                  🔄 IN PROGRESS
                 </button>
                 <button
                   type="button"
@@ -318,7 +318,7 @@ const DossierContent: React.FC<{
                       : "bg-white border-slate-300 text-slate-700 hover:bg-slate-100"
                   }`}
                 >
-                  ? RESOLVED
+                  ✅ RESOLVED
                 </button>
               </div>
             </div>

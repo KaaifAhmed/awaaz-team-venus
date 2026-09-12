@@ -90,19 +90,19 @@ KMC_ARTERIAL_ROADS = [
 STATUTORY_REFERENCES = {
     "KWSC": {
         "name": "Karachi Water & Sewerage Corporation (KW&SC)",
-        "act": "Karachi Water & Sewerage Corporation Act 2023 (Section 24)",
+        "act": "Karachi Water & Sewerage Corporation Act 2023 (Section 24) [KW&SC Act 2023 Sec. 24]",
         "mandate": "Statutory duty to maintain, repair, and operate sewerage and potable water distribution infrastructure without causing public nuisance.",
         "constitutional": "Constitution of Pakistan 1973, Articles 9 (Right to Life) & 14 (Inviolability of Dignity of Man)"
     },
     "KMC": {
         "name": "Karachi Metropolitan Corporation (KMC)",
-        "act": "Sindh Local Government Act 2021 (Schedule II - Functions of Metropolitan Corporation)",
+        "act": "Sindh Local Government Act 2021 / SLGO 2021 (Schedule II - Functions of Metropolitan Corporation)",
         "mandate": "Statutory obligation to construct, repair, and maintain major arterial traffic corridors, primary stormwater drainage nallahs, and municipal infrastructure.",
-        "constitutional": "Constitution of Pakistan 1973, Articles 9 & 25"
+        "constitutional": "Constitution of Pakistan 1973, Articles 9 & 14 (Right to Life & Dignity)"
     },
     "SSWMB": {
         "name": "Sindh Solid Waste Management Board (SSWMB)",
-        "act": "Sindh Solid Waste Management Board Act 2021 (Sections 15 & 16)",
+        "act": "Sindh Solid Waste Management Board Act 2021 [SSWMB Act 2021] (Sections 15 & 16)",
         "mandate": "Exclusive authority for collection, transport, and disposal of municipal solid waste, sweeping, and maintenance of designated garbage transfer stations (GTS).",
         "constitutional": "Constitution of Pakistan 1973, Articles 9 & 14"
     },

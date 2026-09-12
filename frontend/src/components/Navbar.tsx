@@ -32,7 +32,7 @@ export const Navbar: React.FC = () => {
     if (user.role === "SUPER_ADMIN") {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-900 text-white shadow-xs">
-          ? Super Admin HQ
+          ⚡ Super Admin HQ
         </span>
       );
     }
@@ -46,7 +46,7 @@ export const Navbar: React.FC = () => {
     }
     return (
       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-800 border border-slate-300">
-        ?? Citizen Portal
+        🏛️ Citizen Portal
       </span>
     );
   };
@@ -66,7 +66,7 @@ export const Navbar: React.FC = () => {
           className="flex items-center gap-3 cursor-pointer select-none"
         >
           <div className="w-10 h-10 rounded-xl bg-emerald-900 text-white flex items-center justify-center font-bold shadow-xs">
-            <span className="text-xl leading-none">???</span>
+            <ShieldCheck className="w-6 h-6 text-white" />
           </div>
           <div>
             <div className="flex items-center gap-2">

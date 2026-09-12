@@ -3,6 +3,8 @@ from rest_framework import serializers
 
 from .models import LinkedPhone
 
+import re
+
 User = get_user_model()
 
 
@@ -18,6 +20,8 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def validate_cnic(self, value):
         val = value.strip()
+        if not re.match(r"^\d{5}-\d{7}-\d$", val):
+            raise serializers.ValidationError("Invalid CNIC format. Expected format is XXXXX-XXXXXXX-X (13 digits).")
         if User.objects.filter(cnic=val).exists():
             raise serializers.ValidationError("A user with this CNIC already exists.")
         return val

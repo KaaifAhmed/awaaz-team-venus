@@ -99,7 +99,7 @@ export const SuccessCard: React.FC<SuccessCardProps> = ({
           <StatusBadge status="PENDING" size="sm" />
         </div>
         <div className="pt-2 border-t border-emerald-200/60 text-emerald-900 font-medium">
-          ?? Clustered with {communityCount} neighboring reports to elevate dispatch priority.
+          👥 Clustered with {communityCount} neighboring reports to elevate dispatch priority.
         </div>
       </div>
 

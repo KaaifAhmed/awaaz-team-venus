@@ -308,7 +308,7 @@ export const CitizenPortal: React.FC = () => {
               <textarea
                 value={complaintText}
                 onChange={(e) => setComplaintText(e.target.value)}
-                placeholder="Apna masla bayan karein (English, ????, ya Roman Urdu me)... maslan: Gulshan Block 4 me Disco Bakery ke samnay sewer line ubal rahi hai aur badbu arhi hai..."
+                placeholder="Apna masla bayan karein (English, اردو, ya Roman Urdu me)... maslan: Gulshan Block 4 me Disco Bakery ke samnay sewer line ubal rahi hai aur badbu arhi hai..."
                 rows={4}
                 className="w-full p-3.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 outline-none leading-relaxed bg-white"
               />

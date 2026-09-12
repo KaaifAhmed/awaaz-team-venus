@@ -107,7 +107,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                 Collective Community Clout
               </div>
               <p className="text-xs mt-0.5 text-emerald-900 leading-relaxed">
-                ?? <strong>{reviewData.community_reports_count || 3} neighbors</strong> in{" "}
+                👥 <strong>{reviewData.community_reports_count || 3} neighbors</strong> in{" "}
                 {reviewData.landmark || "your vicinity"} have also reported this issue.
                 Your complaint is stacked to increase collective dispatch urgency!
               </p>
@@ -117,7 +117,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
           {/* Citizen Layman Summary Hero Box */}
           <div className="bg-slate-50 border-l-4 border-emerald-800 rounded-r-xl p-4 shadow-xs">
             <div className="text-xs font-bold uppercase tracking-wider text-emerald-900 mb-1 flex items-center gap-1.5">
-              <span>Layman Summary (????? ?????)</span>
+              <span>Layman Summary (آسان خلاصہ)</span>
             </div>
             <p className="text-slate-800 text-sm leading-relaxed">
               {reviewData.layman_summary ||
@@ -140,7 +140,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
             >
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-emerald-800" />
-                <span>View Generated Statutory Legal Draft (?????? ?????)</span>
+                <span>View Generated Statutory Legal Draft (قانونی مسودہ)</span>
               </div>
               {showLegalDraft ? (
                 <ChevronUp className="w-4 h-4 text-slate-500" />
@@ -173,7 +173,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                         : "bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200"
                     }`}
                   >
-                    Urdu Official Notice (????)
+                    Urdu Official Notice (اردو)
                   </button>
                 </div>
 
@@ -192,7 +192,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
                     className="bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-800 max-h-48 overflow-y-auto whitespace-pre-wrap leading-relaxed font-sans"
                   >
                     {reviewData.draft_complaint?.body_ur ||
-                      "????? ???? ???????: ?????? ??? ?????? ?? ??? ????? ???? ??? ???? ???? ??? ??? ????? ?? ?????"}
+                      "بخدمت جناب مجاز اتھارٹی: قانونی نوٹس برائے فوری کارروائی و ازالہ عوامی شکایت بموجب سندھ لوکل گورنمنٹ ایکٹ۔"}
                   </div>
                 )}
               </div>

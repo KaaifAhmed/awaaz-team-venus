@@ -68,7 +68,7 @@ export const SuperAdminPage: React.FC = () => {
             </h1>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Provincial Commissioner HQ � Cross-Agency Enforcement & System Health Telemetry
+            Provincial Commissioner HQ — Cross-Agency Enforcement & System Health Telemetry
           </p>
         </div>
 
@@ -149,7 +149,7 @@ export const SuperAdminPage: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <span className="text-slate-500">P0 Emergencies:</span>
                       <span className="font-bold text-red-700 bg-red-50 px-2 py-0.5 rounded text-[11px]">
-                        ?? {agency.p0EmergencyCount}
+                        🚨 {agency.p0EmergencyCount}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">

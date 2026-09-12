@@ -65,13 +65,13 @@ export const LoginPage: React.FC = () => {
         {/* Crest & Title Header */}
         <div className="text-center mb-6">
           <div className="w-14 h-14 bg-emerald-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-xs">
-            <span className="text-2xl">???</span>
+            <ShieldCheck className="w-8 h-8" />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
             Karachi Civic AI Engine
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Government of Sindh � Inter-Agency Civic Redressal Portal
+            Government of Sindh — Inter-Agency Civic Redressal Portal
           </p>
         </div>
 
@@ -83,13 +83,13 @@ export const LoginPage: React.FC = () => {
               setPortalTab("citizen");
               setCnic("42101-1234567-1");
             }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
               portalTab === "citizen"
                 ? "bg-emerald-900 text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            ?? Citizen Access
+            <span>🏛️ Citizen Access</span>
           </button>
           <button
             type="button"
@@ -97,13 +97,13 @@ export const LoginPage: React.FC = () => {
               setPortalTab("official");
               setCnic("42201-1111111-1");
             }}
-            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+            className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
               portalTab === "official"
                 ? "bg-emerald-900 text-white shadow-xs"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            ??? Official Portal
+            <span>🛡️ Official Portal</span>
           </button>
         </div>
 
@@ -145,7 +145,7 @@ export const LoginPage: React.FC = () => {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="��������"
+                placeholder="••••••••"
                 className="w-full h-11 px-3.5 pr-10 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 outline-none transition-all bg-white"
               />
               <button
@@ -181,7 +181,7 @@ export const LoginPage: React.FC = () => {
         <div className="mt-8 pt-6 border-t border-slate-200">
           <div className="flex items-center justify-between mb-2.5">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              ? Quick-Switch Demo Personas
+              ⚡ Quick-Switch Demo Personas
             </span>
             <span className="text-[10px] text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded">
               1-Tap Fill

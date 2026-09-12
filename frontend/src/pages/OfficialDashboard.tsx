@@ -66,7 +66,7 @@ export const OfficialDashboard: React.FC = () => {
       case "KWSC":
         return {
           name: "Karachi Water & Sewerage Corporation (KW&SC)",
-          sub: "Central Operational Command � Water & Sewerage Sub-Divisions",
+          sub: "Central Operational Command — Water & Sewerage Sub-Divisions",
           icon: <Landmark className="w-5 h-5 text-emerald-800" />,
           accent: "border-emerald-600",
         };
@@ -270,7 +270,7 @@ export const OfficialDashboard: React.FC = () => {
         <div className="bg-red-50/40 border-2 border-red-300 border-l-4 border-l-red-700 rounded-xl p-4 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-red-800 uppercase tracking-wider">
-              ?? P0 Emergency
+              🚨 P0 Emergency
             </span>
             <AlertTriangle className="w-4 h-4 text-red-600 animate-pulse" />
           </div>

@@ -97,6 +97,12 @@ class LinkPhoneView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if request.user.linked_phones.count() >= 2:
+            return Response(
+                envelope(error={"code": "MAX_PHONES_EXCEEDED", "message": "A maximum of 2 secondary phone numbers can be linked to an account."}),
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         phone = serializer.validated_data["secondary_phone"].strip()
         LinkedPhone.objects.create(user=request.user, phone_number=phone)
 

@@ -60,7 +60,7 @@ const saveStoredComplaints = (items: ComplaintCard[]): void => {
 
 // Create Axios Instance
 export const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000",
+  baseURL: (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) || "http://localhost:8000",
   timeout: 15000,
   headers: {
     "Content-Type": "application/json",
@@ -249,7 +249,7 @@ export const api = {
         draft_complaint: {
           subject_en: `URGENT STATUTORY COMPLAINT: ${category.toUpperCase()} AT ${data.landmark || "GULSHAN BLOCK 4"}`,
           body_en: `Pursuant to statutory obligations under ${citations}, this notice formally registers an acute civic breakdown requiring emergency departmental intervention within 24 hours.`,
-          body_ur: `????? ???? ??????? (${targetAuth})? ?????: ?????? ?????? ????? ????? ????? ?????? ?????? ?? ??? ? ?????? ?? ???? ?? ??? ???? ???????? ??? ?? ???? ???`,
+          body_ur: `بخدمت جناب مجاز اتھارٹی (${targetAuth})، نوٹس: موصولہ عوامی شکایات کی رو سے آپ کے متعلقہ دائرہ اختیار میں فوری قانونی کارروائی مطلوب ہے۔`,
         },
       };
       return review;
@@ -334,7 +334,7 @@ export const api = {
           "Karachi Water and Sewerage Corporation Act 2023 (Sec. 24); Constitution of Pakistan Arts. 9 & 14.",
         subject_en: card?.subject_en || "FORMAL STATUTORY NOTICE OF CIVIC INFRASTRUCTURE FAILURE",
         body_en: `To: Competent Authority, ${card?.target_authority || "KWSC"}.\n\nNotice is hereby served regarding acute failure at ${card?.landmark || "Karachi"}. Immediate dispatch of inspection and remediation teams is mandated under statutory governance regulations.`,
-        body_ur: `????? ???? ????? ${card?.target_authority || "KWSC"}? ?????? ???? ?? ???? ????? ?? ???? ????? ??? ???? ??? ?????? ?????? ??? ????? ??? ?? ?????`,
+        body_ur: `بخدمت جناب مجاز اتھارٹی ${card?.target_authority || "KWSC"}، موصولہ عوامی شکایت کے تحت قانونی نوٹس ارسال کیا جا رہا ہے۔ فوری تدارک کا حکم دیا جاتا ہے۔`,
         official_status: card?.official_status || "PENDING",
         official_notes: "Awaiting field supervisor on-site log.",
         reporting_citizens_count: card?.community_reports_count || 3,
