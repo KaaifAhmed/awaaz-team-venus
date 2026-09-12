@@ -7,12 +7,21 @@ import redis
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import ComplaintDossier, Incident, JobBuffer, MasterIncident
+from .serializers import (
+    ComplaintStatusUpdateRequestSerializer,
+    GenericResponseEnvelopeSerializer,
+    ReportConfirmRequestSerializer,
+    ReportSubmitRequestSerializer,
+    WhatsAppInboundRequestSerializer,
+    WorkerCallbackRequestSerializer,
+)
 from .spatial_data import SPATIAL_BOUNDARIES
 
 User = get_user_model()
@@ -60,6 +69,7 @@ def haversine(lat1, lon1, lat2, lon2):
 
 class ReportSubmitView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = ReportSubmitRequestSerializer
 
     def post(self, request):
         data = request.data
@@ -109,6 +119,7 @@ class ReportSubmitView(APIView):
 
 class ReportReviewView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = GenericResponseEnvelopeSerializer
 
     def get(self, request, job_id):
         job = JobBuffer.objects.filter(job_id=job_id).first()
@@ -152,6 +163,7 @@ class ReportReviewView(APIView):
 
 class ReportConfirmView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = ReportConfirmRequestSerializer
 
     def post(self, request):
         job_id = request.data.get("job_id")
@@ -243,6 +255,7 @@ class ReportConfirmView(APIView):
 
 class MyComplaintsView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = GenericResponseEnvelopeSerializer
 
     def get(self, request):
         incidents = Incident.objects.filter(user=request.user).select_related("master_incident").order_by("-created_at")
@@ -267,6 +280,7 @@ class MyComplaintsView(APIView):
 
 class InternalJobDetailView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = GenericResponseEnvelopeSerializer
 
     def get(self, request, job_id):
         job = JobBuffer.objects.filter(job_id=job_id).select_related("user").first()
@@ -303,6 +317,7 @@ class InternalJobDetailView(APIView):
 
 class SpatialBoundariesView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = GenericResponseEnvelopeSerializer
 
     def get(self, request):
         return Response(envelope(data=SPATIAL_BOUNDARIES), status=status.HTTP_200_OK)
@@ -310,6 +325,7 @@ class SpatialBoundariesView(APIView):
 
 class ActiveIncidentsSearchView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = GenericResponseEnvelopeSerializer
 
     def get(self, request):
         category = request.query_params.get("category")
@@ -357,6 +373,7 @@ class ActiveIncidentsSearchView(APIView):
 
 class AIConfigView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = GenericResponseEnvelopeSerializer
 
     def get(self, request):
         return Response(
@@ -375,6 +392,7 @@ class AIConfigView(APIView):
 
 class WorkerCallbackView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = WorkerCallbackRequestSerializer
 
     def post(self, request, job_id=None):
         data = request.data
@@ -445,6 +463,7 @@ def check_official_or_admin(user):
 
 class DashboardOverviewView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = GenericResponseEnvelopeSerializer
 
     def get(self, request):
         user = request.user
@@ -478,7 +497,9 @@ class DashboardOverviewView(APIView):
 
 class DashboardComplaintsView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = GenericResponseEnvelopeSerializer
 
+    @extend_schema(operation_id="admin_dashboard_complaints_list")
     def get(self, request):
         user = request.user
         if not check_official_or_admin(user):
@@ -543,7 +564,9 @@ def get_master_incident(lookup_val):
 
 class ComplaintDetailView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = GenericResponseEnvelopeSerializer
 
+    @extend_schema(operation_id="admin_dashboard_complaint_detail")
     def get(self, request, id):
         user = request.user
         if not check_official_or_admin(user):
@@ -602,6 +625,7 @@ class ComplaintDetailView(APIView):
 
 class ComplaintStatusUpdateView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = ComplaintStatusUpdateRequestSerializer
 
     def patch(self, request, id):
         user = request.user
@@ -650,6 +674,7 @@ class ComplaintStatusUpdateView(APIView):
 
 class SuperAdminOverviewView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = GenericResponseEnvelopeSerializer
 
     def get(self, request):
         if request.user.role != "SUPER_ADMIN":
@@ -693,6 +718,7 @@ class SuperAdminOverviewView(APIView):
 
 class WhatsAppInboundView(APIView):
     permission_classes = [AllowAny]
+    serializer_class = WhatsAppInboundRequestSerializer
 
     def post(self, request):
         data = request.data
@@ -705,7 +731,7 @@ class WhatsAppInboundView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        text = data.get("text", "")
+        text = (data.get("text") or "").strip()
         loc = data.get("location") or {}
         lat = loc.get("lat")
         lng = loc.get("lng")
@@ -715,6 +741,35 @@ class WhatsAppInboundView(APIView):
         except (ValueError, TypeError):
             lat = None
             lng = None
+
+        # Process media attachment (image / audio) if present
+        media_base64 = data.get("media_base64") or data.get("image_base64")
+        media_type = data.get("media_type") or ""
+        image_content_file = None
+        audio_content_file = None
+
+        if media_base64:
+            import base64
+            from django.core.files.base import ContentFile
+            try:
+                decoded_bytes = base64.b64decode(media_base64)
+                if "audio" in media_type:
+                    ext = "ogg" if "ogg" in media_type else "mp3"
+                    audio_content_file = ContentFile(decoded_bytes, name=f"wa_{phone}_{uuid.uuid4().hex[:8]}.{ext}")
+                else:
+                    ext = "png" if "png" in media_type else "jpg"
+                    image_content_file = ContentFile(decoded_bytes, name=f"wa_{phone}_{uuid.uuid4().hex[:8]}.{ext}")
+            except Exception as b64_err:
+                logger.warning(f"[WHATSAPP-INBOUND] Failed to decode media attachment: {b64_err}")
+
+        # If user only submitted a photo/audio with no caption text, provide factual description
+        if not text:
+            if image_content_file:
+                text = "Citizen photographic civic grievance submitted via WhatsApp."
+            elif audio_content_file:
+                text = "Citizen voice recording civic grievance submitted via WhatsApp."
+            else:
+                text = "Citizen civic report submitted via WhatsApp."
 
         # Look up or create citizen stub
         user = (
@@ -736,7 +791,7 @@ class WhatsAppInboundView(APIView):
             )
 
         job_id = f"job_{uuid.uuid4().hex[:12]}"
-        JobBuffer.objects.create(
+        job = JobBuffer.objects.create(
             job_id=job_id,
             user=user,
             source="whatsapp",
@@ -745,6 +800,12 @@ class WhatsAppInboundView(APIView):
             lng=lng,
             status="QUEUED",
         )
+        if image_content_file:
+            job.image_file = image_content_file
+            job.save(update_fields=["image_file"])
+        if audio_content_file:
+            job.audio_file = audio_content_file
+            job.save(update_fields=["audio_file"])
 
         enqueue_ai_job(job_id)
 

@@ -679,8 +679,18 @@ async def fetch_job_batch_node(
         or initial_payload.get("text")
         or initial_payload.get("input")
         or state.get("raw_text")
+<<<<<<< HEAD
         or ""
+=======
+>>>>>>> 3e10f09d22414dfc025fc072c7d3f62c752473d2
     )
+    if not raw_text:
+        if fetched_data.get("image_url") or initial_payload.get("image_url"):
+            raw_text = "Citizen photographic civic grievance"
+        elif fetched_data.get("audio_url") or initial_payload.get("audio_url"):
+            raw_text = "Citizen audio recording civic grievance"
+        else:
+            raw_text = "gutter ubal raha hai Disco Bakery Gulshan-e-Iqbal"
 
     location = (
         fetched_data.get("location")
@@ -718,7 +728,11 @@ async def fetch_job_batch_node(
         fetched_data.get("landmark_hint")
         or initial_payload.get("landmark_hint")
         or state.get("landmark_hint")
+<<<<<<< HEAD
         or ""
+=======
+        or "Karachi"
+>>>>>>> 3e10f09d22414dfc025fc072c7d3f62c752473d2
     )
 
     source = (
@@ -784,6 +798,7 @@ async def fetch_job_batch_node(
     }
 
 
+<<<<<<< HEAD
 # ============================================================================
 # 6. INPUT SECURITY
 # ============================================================================
@@ -816,6 +831,21 @@ async def security_input_node(
         reason = guard.get(
             "reason",
             "prompt_injection_or_prohibited_content"
+=======
+async def security_input_node(state: JobState) -> Dict[str, Any]:
+    """
+    Node 2: Gate 1 prompt shield and injection detector.
+    """
+    raw_text = state.get("raw_text", "")
+    guard = input_guard(raw_text)
+
+    if not guard.get("ok", True):
+        reason = guard.get("reason", "Prohibited pattern detected")
+        logger.warning(f"[SECURITY] Input Guard triggered on job {state.get('job_id')}: {reason}")
+        refusal_msg = (
+            "Your grievance could not be processed because it contains prohibited instructions or unsafe content.\n"
+            "آپ کی شکایت غیر محفوظ مواد یا ممنوعہ ہدایات کی وجہ سے آگے نہیں بھیجی جا سکی۔"
+>>>>>>> 3e10f09d22414dfc025fc072c7d3f62c752473d2
         )
 
         logger.warning(
@@ -864,6 +894,7 @@ async def security_input_node(
     }
 
 
+<<<<<<< HEAD
 # ============================================================================
 # 7. GEMINI MULTIMODAL PERCEPTION
 # ============================================================================
@@ -872,6 +903,13 @@ async def gemini_multimodal_perception_node(
     state: JobState
 ) -> Dict[str, Any]:
 
+=======
+async def gemini_multimodal_perception_node(state: JobState) -> Dict[str, Any]:
+    """
+    Node 3: Multimodal call to Google Gemini (gemini-2.5-flash via litellm or REST)
+    with intelligent deterministic rule-based fallback if offline or API key missing.
+    """
+>>>>>>> 3e10f09d22414dfc025fc072c7d3f62c752473d2
     if state.get("security_blocked"):
         return {}
 
@@ -978,8 +1016,16 @@ async def gemini_multimodal_perception_node(
     if GEMINI_API_KEY:
 
         try:
+<<<<<<< HEAD
 
             import litellm
+=======
+            # Model normalization
+            raw_model = GEMINI_MODEL.strip()
+            clean_model = raw_model.replace("gemini/", "")
+            if "3.5" in clean_model or "flash-lite" in clean_model or not clean_model:
+                clean_model = "gemini-2.5-flash"
+>>>>>>> 3e10f09d22414dfc025fc072c7d3f62c752473d2
 
             logger.info(
                 f"[GEMINI] Starting multimodal inference "
@@ -989,6 +1035,7 @@ async def gemini_multimodal_perception_node(
                 f"model={GEMINI_MODEL}"
             )
 
+<<<<<<< HEAD
             system_prompt = """
 You are the Karachi Civic AI Perception Model.
 
@@ -1229,6 +1276,99 @@ Never return explanations outside JSON.
                 "core_problem": core_problem
             }
 
+=======
+            # 1. First attempt: Direct Google Generative Language REST API
+            rest_url = f"https://generativelanguage.googleapis.com/v1beta/models/{clean_model}:generateContent?key={GEMINI_API_KEY}"
+            prompt_text = f"{system_prompt}\n\nComplaint Text: {raw_text}\nLandmark Hint: {landmark_hint}"
+
+            parts: List[Dict[str, Any]] = [{"text": prompt_text}]
+
+            # Fetch image bytes for multimodal perception if image_url exists
+            if image_url:
+                try:
+                    import base64
+                    # Map localhost or docker host urls appropriately if needed
+                    resolved_img_url = image_url
+                    if "localhost:8000" in resolved_img_url:
+                        resolved_img_url = resolved_img_url.replace("localhost:8000", "main-service:8000")
+                    elif "127.0.0.1:8000" in resolved_img_url:
+                        resolved_img_url = resolved_img_url.replace("127.0.0.1:8000", "main-service:8000")
+
+                    async with httpx.AsyncClient(timeout=5.0) as img_client:
+                        img_resp = await img_client.get(resolved_img_url)
+                        if img_resp.status_code == 200:
+                            img_b64 = base64.b64encode(img_resp.content).decode("utf-8")
+                            mime = "image/jpeg"
+                            if ".png" in resolved_img_url.lower():
+                                mime = "image/png"
+                            parts.append({
+                                "inlineData": {
+                                    "mimeType": mime,
+                                    "data": img_b64
+                                }
+                            })
+                            logger.info(f"[GEMINI-MULTIMODAL] Successfully attached image ({len(img_resp.content)} bytes) to Gemini REST call")
+                except Exception as img_fetch_err:
+                    logger.warning(f"[GEMINI-MULTIMODAL] Could not fetch image bytes for {image_url}: {img_fetch_err}")
+
+            try:
+                async with httpx.AsyncClient(timeout=8.0) as http_client:
+                    rest_resp = await http_client.post(
+                        rest_url,
+                        json={
+                            "contents": [{"parts": parts}],
+                            "generationConfig": {
+                                "temperature": 0.1,
+                                "responseMimeType": "application/json"
+                            }
+                        }
+                    )
+                    if rest_resp.status_code == 200:
+                        data = rest_resp.json()
+                        raw_content = data["candidates"][0]["content"]["parts"][0]["text"]
+                        parsed = json.loads(raw_content)
+                        return {
+                            "issue_category": parsed.get("issue_category", "Pothole / Road Damage"),
+                            "severity": parsed.get("severity", "P1"),
+                            "landmark": parsed.get("detected_landmark") or landmark_hint or "Karachi",
+                            "core_problem": parsed.get("core_problem", raw_text)
+                        }
+            except Exception as rest_exc:
+                logger.debug(f"[GEMINI-REST] Direct REST call failed: {rest_exc}")
+
+            # 2. Second attempt: LiteLLM
+            try:
+                import litellm
+
+                litellm_model = f"gemini/{clean_model}"
+                messages = [{"role": "system", "content": system_prompt}]
+                user_content: List[Dict[str, Any]] = [{"type": "text", "text": f"Complaint: {raw_text}\nHint: {landmark_hint}"}]
+                if image_url:
+                    user_content.append({"type": "image_url", "image_url": {"url": image_url}})
+
+                messages.append({"role": "user", "content": user_content})
+
+                response = await litellm.acompletion(
+                    model=litellm_model,
+                    messages=messages,
+                    api_key=GEMINI_API_KEY,
+                    temperature=0.1,
+                    max_tokens=300,
+                    response_format={"type": "json_object"}
+                )
+
+                content = response.choices[0].message.content
+                parsed = json.loads(content)
+                return {
+                    "issue_category": parsed.get("issue_category", "Pothole / Road Damage"),
+                    "severity": parsed.get("severity", "P1"),
+                    "landmark": parsed.get("detected_landmark") or landmark_hint or "Karachi",
+                    "core_problem": parsed.get("core_problem", raw_text)
+                }
+            except Exception as litellm_exc:
+                logger.warning(f"[GEMINI-LITELLM] LiteLLM call failed: {litellm_exc}")
+
+>>>>>>> 3e10f09d22414dfc025fc072c7d3f62c752473d2
         except Exception as exc:
 
             logger.warning(

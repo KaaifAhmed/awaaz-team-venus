@@ -21,6 +21,7 @@ def envelope(data=None, error=None):
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
+    serializer_class = RegisterSerializer
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -54,6 +55,7 @@ class RegisterView(APIView):
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
+    serializer_class = LoginSerializer
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -86,6 +88,7 @@ class LoginView(APIView):
 
 class LinkPhoneView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = LinkPhoneSerializer
 
     def post(self, request):
         serializer = LinkPhoneSerializer(data=request.data)
@@ -114,6 +117,7 @@ class LinkPhoneView(APIView):
 
 class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
 
     def get(self, request):
         return Response(envelope(data=UserSerializer(request.user).data), status=status.HTTP_200_OK)
