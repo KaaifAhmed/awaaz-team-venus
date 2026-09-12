@@ -119,6 +119,10 @@ CORS_ALLOWED_ORIGINS = [
     for orig in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000").split(",")
     if orig.strip()
 ]
+CORS_ALLOWED_ORIGINS.append("https://team-venus-frontend.vercel.app")
+CORS_ALLOWED_ORIGINS.append("http://localhost:5174")
+
+
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
 
 MEDIA_URL = "/media/"
