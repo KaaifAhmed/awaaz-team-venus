@@ -1311,62 +1311,75 @@ Never return explanations outside JSON.
                 except Exception as img_fetch_err:
                     logger.warning(f"[GEMINI-MULTIMODAL] Could not fetch image bytes for {image_url}: {img_fetch_err}")
 
-            try:
-                async with httpx.AsyncClient(timeout=8.0) as http_client:
-                    rest_resp = await http_client.post(
-                        rest_url,
-                        json={
-                            "contents": [{"parts": parts}],
-                            "generationConfig": {
-                                "temperature": 0.1,
-                                "responseMimeType": "application/json"
+            # Candidate models for high demand resilience
+            candidate_models = [clean_model, "gemini-2.0-flash", "gemini-1.5-flash"]
+            if clean_model in candidate_models:
+                candidate_models.remove(clean_model)
+                candidate_models.insert(0, clean_model)
+
+            # 1. Primary path: Direct Google Generative Language REST API (supports multimodal inlineData directly)
+            for model_attempt in candidate_models:
+                rest_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_attempt}:generateContent?key={GEMINI_API_KEY}"
+                try:
+                    async with httpx.AsyncClient(timeout=10.0) as http_client:
+                        rest_resp = await http_client.post(
+                            rest_url,
+                            json={
+                                "contents": [{"parts": parts}],
+                                "generationConfig": {
+                                    "temperature": 0.1,
+                                    "responseMimeType": "application/json"
+                                }
                             }
-                        }
+                        )
+                        if rest_resp.status_code == 200:
+                            data = rest_resp.json()
+                            raw_content = data["candidates"][0]["content"]["parts"][0]["text"]
+                            parsed = json.loads(raw_content)
+                            logger.info(f"[GEMINI-REST] Direct REST call succeeded with {model_attempt}: category={parsed.get('issue_category')}, severity={parsed.get('severity')}")
+                            return {
+                                "issue_category": parsed.get("issue_category", "Pothole / Road Damage"),
+                                "severity": parsed.get("severity", "P1"),
+                                "landmark": parsed.get("detected_landmark") or landmark_hint or "Karachi",
+                                "core_problem": parsed.get("core_problem", raw_text)
+                            }
+                        else:
+                            logger.warning(f"[GEMINI-REST] Model {model_attempt} returned {rest_resp.status_code}, trying next model fallback...")
+                except Exception as rest_exc:
+                    logger.warning(f"[GEMINI-REST] Direct REST call exception on {model_attempt}: {rest_exc}")
+
+            # 2. Fallback attempt: LiteLLM (skip internal URLs that trigger LiteLLM SSRF protection)
+            if not image_url or not ("main-service" in image_url or "localhost" in image_url):
+                try:
+                    import litellm
+
+                    litellm_model = f"gemini/{clean_model}"
+                    messages = [{"role": "system", "content": system_prompt}]
+                    user_content: List[Dict[str, Any]] = [{"type": "text", "text": f"Complaint: {raw_text}\nHint: {landmark_hint}"}]
+                    if image_url:
+                        user_content.append({"type": "image_url", "image_url": {"url": image_url}})
+
+                    messages.append({"role": "user", "content": user_content})
+
+                    response = await litellm.acompletion(
+                        model=litellm_model,
+                        messages=messages,
+                        api_key=GEMINI_API_KEY,
+                        temperature=0.1,
+                        max_tokens=300,
+                        response_format={"type": "json_object"}
                     )
-                    if rest_resp.status_code == 200:
-                        data = rest_resp.json()
-                        raw_content = data["candidates"][0]["content"]["parts"][0]["text"]
-                        parsed = json.loads(raw_content)
-                        return {
-                            "issue_category": parsed.get("issue_category", "Pothole / Road Damage"),
-                            "severity": parsed.get("severity", "P1"),
-                            "landmark": parsed.get("detected_landmark") or landmark_hint or "Karachi",
-                            "core_problem": parsed.get("core_problem", raw_text)
-                        }
-            except Exception as rest_exc:
-                logger.debug(f"[GEMINI-REST] Direct REST call failed: {rest_exc}")
 
-            # 2. Second attempt: LiteLLM
-            try:
-                import litellm
-
-                litellm_model = f"gemini/{clean_model}"
-                messages = [{"role": "system", "content": system_prompt}]
-                user_content: List[Dict[str, Any]] = [{"type": "text", "text": f"Complaint: {raw_text}\nHint: {landmark_hint}"}]
-                if image_url:
-                    user_content.append({"type": "image_url", "image_url": {"url": image_url}})
-
-                messages.append({"role": "user", "content": user_content})
-
-                response = await litellm.acompletion(
-                    model=litellm_model,
-                    messages=messages,
-                    api_key=GEMINI_API_KEY,
-                    temperature=0.1,
-                    max_tokens=300,
-                    response_format={"type": "json_object"}
-                )
-
-                content = response.choices[0].message.content
-                parsed = json.loads(content)
-                return {
-                    "issue_category": parsed.get("issue_category", "Pothole / Road Damage"),
-                    "severity": parsed.get("severity", "P1"),
-                    "landmark": parsed.get("detected_landmark") or landmark_hint or "Karachi",
-                    "core_problem": parsed.get("core_problem", raw_text)
-                }
-            except Exception as litellm_exc:
-                logger.warning(f"[GEMINI-LITELLM] LiteLLM call failed: {litellm_exc}")
+                    content = response.choices[0].message.content
+                    parsed = json.loads(content)
+                    return {
+                        "issue_category": parsed.get("issue_category", "Pothole / Road Damage"),
+                        "severity": parsed.get("severity", "P1"),
+                        "landmark": parsed.get("detected_landmark") or landmark_hint or "Karachi",
+                        "core_problem": parsed.get("core_problem", raw_text)
+                    }
+                except Exception as litellm_exc:
+                    logger.warning(f"[GEMINI-LITELLM] LiteLLM call failed: {litellm_exc}")
 
 >>>>>>> 3e10f09d22414dfc025fc072c7d3f62c752473d2
         except Exception as exc:

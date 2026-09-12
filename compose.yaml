@@ -92,6 +92,7 @@ services:
       - "3000:3000"
     volumes:
       - whatsapp_auth:/app/auth
+      - ./whatsapp-service/dist:/app/dist
     depends_on:
       - main-service
 

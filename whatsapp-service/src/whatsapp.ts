@@ -3,6 +3,7 @@ import makeWASocket, {
   useMultiFileAuthState,
   WASocket,
   downloadMediaMessage,
+  normalizeMessageContent,
 } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
 import qrcode from "qrcode-terminal";
@@ -108,11 +109,29 @@ class WhatsAppService {
       // 1-on-1 direct messaging only: ignore groups & status broadcasts
       if (remoteJid.endsWith("@g.us") || remoteJid.includes("broadcast")) return;
 
+      const rawMessage = msg.message;
+      const message = normalizeMessageContent(rawMessage) || rawMessage;
+
+      // Unpack viewOnce or ephemeral containers if present
+      const unpacked =
+        message.viewOnceMessage?.message ||
+        message.viewOnceMessageV2?.message ||
+        message.viewOnceMessageV2Extension?.message ||
+        message.ephemeralMessage?.message ||
+        message.documentWithCaptionMessage?.message ||
+        message;
+
+      const imageMsg = unpacked.imageMessage || message.imageMessage;
+      const audioMsg = unpacked.audioMessage || message.audioMessage || unpacked.voiceMessage;
+      const videoMsg = unpacked.videoMessage || message.videoMessage;
+
       const text =
-        msg.message.conversation ||
-        msg.message.extendedTextMessage?.text ||
-        msg.message.imageMessage?.caption ||
-        msg.message.videoMessage?.caption ||
+        unpacked.conversation ||
+        unpacked.extendedTextMessage?.text ||
+        imageMsg?.caption ||
+        videoMsg?.caption ||
+        message.conversation ||
+        message.extendedTextMessage?.text ||
         "";
 
       const phone = remoteJid.replace("@s.whatsapp.net", "");
@@ -121,8 +140,8 @@ class WhatsAppService {
       let mediaType: string | null = null;
 
       // Extract image or audio media attachment
-      const hasImage = Boolean(msg.message.imageMessage);
-      const hasAudio = Boolean(msg.message.audioMessage);
+      const hasImage = Boolean(imageMsg);
+      const hasAudio = Boolean(audioMsg);
 
       if (hasImage || hasAudio) {
         try {
@@ -140,9 +159,9 @@ class WhatsAppService {
           if (buffer && buffer.length > 0) {
             mediaBase64 = buffer.toString("base64");
             mediaType = hasImage
-              ? msg.message.imageMessage?.mimetype || "image/jpeg"
-              : msg.message.audioMessage?.mimetype || "audio/ogg";
-            console.log(`Successfully downloaded media: ${(buffer.length / 1024).toFixed(1)} KB`);
+              ? imageMsg?.mimetype || "image/jpeg"
+              : audioMsg?.mimetype || "audio/ogg";
+            console.log(`Successfully downloaded media: ${(buffer.length / 1024).toFixed(1)} KB (mimetype: ${mediaType})`);
           }
         } catch (mediaErr: any) {
           console.warn(`Could not download media from WhatsApp message: ${mediaErr?.message || mediaErr}`);
