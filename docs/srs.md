@@ -27,16 +27,16 @@ The Karachi Civic AI Engine is an intake, classification, and routing platform t
 
 | Role Identifier | Role Name | Description & Capabilities |
 |---|---|---|
-| `CITIZEN` | Resident User | Karachi resident with verified CNIC. Submits multimodal reports via WhatsApp or Web, receives jargon-free AI summaries, chats with the review agent to edit/approve drafts, and views status of filed complaints. |
-| `GOVT_OFFICIAL` | Department Officer | Municipal official assigned to an agency group (KMC, KW&SC, SSWMB, Cantonments). Authenticates into Django Admin and only accesses complaints clustered under their organization. |
-| `SUPER_ADMIN` | System Administrator | Platform administrator overseeing the entire system: manages user groups, inspects system/worker logs, views all city complaints, and configures routing rules. |
-| `AI_AGENT` | AI Service Account | Internal service role executing under least-privilege access. Ingests media, extracts landmarks/issues, interacts with citizens during draft reviews, and queues approved complaints. |
+| `CITIZEN` | Resident User | Karachi resident with verified CNIC. Submits multimodal reports via WhatsApp or Web, receives jargon-free AI summaries, chats with the review agent to edit/approve drafts, and tracks status of filed complaints. |
+| `GOVT_OFFICIAL` | Department Officer | Municipal official assigned to an agency group (KMC, KW&SC, SSWMB, Cantonments). Authenticates into the **React Government Admin Dashboard** and only accesses complaints clustered under their organization. |
+| `SUPER_ADMIN` | System Administrator | Platform administrator overseeing the entire platform: manages user roles and department assignments, inspects system/worker logs, views all city complaints, and configures routing rules. |
+| `AI_AGENT` | AI Service Account | Internal service role executing under least-privilege access. Fetches assigned jobs from Main Service buffer, runs multimodal diagnosis, interacts with citizens during draft reviews, and queues approved complaints. |
 
 ### User Stories
-- **US-01 (Citizen Intake & Flexible Location):** As a citizen speaking colloquial Roman Urdu, I want to send a voice note or photo on WhatsApp—sharing my GPS location if I want, or just describing the landmark—so that the system immediately understands my issue without mandatory technical hurdles.
+- **US-01 (Citizen Intake & Flexible Location):** As a citizen speaking colloquial Roman Urdu, I want to send a voice note or photo on WhatsApp or the Web portal—sharing my GPS location if I want, or just describing the landmark—so that the system immediately understands my issue without mandatory technical hurdles.
 - **US-02 (Citizen Human-in-the-Loop Review & Plain Summary):** As a citizen, I want to see what issue the AI identified along with a **short, jargon-free summary (for my eyes only)** and the drafted complaint so that I can easily understand it, request corrections, and approve submission.
-- **US-03 (Official Scoped Dashboard & Clustered Incident View):** As a KW&SC official, I want to log into my department portal and see a deduplicated/clustered view showing the total number of people who reported each incident rather than 1,000 duplicate rows, accompanied by photographic evidence.
-- **US-04 (Admin Governance & System Observability):** As a system admin, I want to onboard department officials, manage group permissions in Django Admin, and oversee system health, worker queues, and structured logs.
+- **US-03 (Official Scoped Dashboard & Clustered Incident View):** As a KW&SC official, I want to log into my dedicated **Government Admin Dashboard** and see a deduplicated/clustered view showing the total number of people who reported each incident rather than 1,000 duplicate rows, accompanied by photographic evidence and status controls.
+- **US-04 (Admin Governance & System Observability):** As a system admin, I want to onboard department officials, manage permissions, and oversee system health, worker queues, and structured logs.
 
 ---
 
@@ -80,8 +80,8 @@ The system applies an extensible routing architecture:
 ## 4. Functional Requirements
 
 ### 4.1 Intake & Multimodal Processing
-- **FR-01 (CNIC Setup & Multi-Number Binding):** The system shall prompt first-time citizens for a valid 13-digit Pakistani CNIC (`XXXXX-XXXXXXX-X`), storing it as the primary key (`CitizenProfile`). The user may link up to 2 active phone numbers to their CNIC profile.
-- **FR-02 (Multimodal Direct Ingestion):** The system shall accept images (JPEG, PNG), audio voice notes (MP3, WAV, OGG), or free text directly via the Google Gemini Multimodal API without external ASR transcribers.
+- **FR-01 (CNIC Setup, User Account & Multi-Number Binding):** The system shall prompt first-time citizens for a valid 13-digit Pakistani CNIC (`XXXXX-XXXXXXX-X`), storing it as the primary key (`CitizenProfile`). The user may link up to 2 active phone numbers to their profile. On login/registration, the system returns the user's `user_id`, `role`, `assigned_org`, and `dashboard_route` for frontend routing.
+- **FR-02 (Multimodal Direct Ingestion with User Tracking):** The intake API shall ingest `user_id`, images (JPEG, PNG), audio voice notes (MP3, WAV, OGG), or free text directly via the Google Gemini Multimodal API without external ASR transcribers.
 - **FR-03 (Trilingual Comprehension):** The system shall detect and parse user inputs in **English, Urdu, and Roman Urdu**, extracting:
   - `issue_category`: Water, Sewerage, Solid Waste, Major Road, Local Street, Drainage, or Manhole.
   - `severity_level`: P0 (Emergency hazard / open manhole), P1 (High / property inundation), P2 (Moderate / routine defect).
@@ -103,15 +103,16 @@ The system applies an extensible routing architecture:
 - **FR-08 (Conversational Revision & Redo):** The AI Agent shall accept citizen modifications (e.g., *"add that sewage is entering houses"*) and dynamically update the draft complaint in the chat.
 - **FR-09 (Explicit Submission Gate):** The complaint dossier status shall remain `DRAFT` until the citizen explicitly sends approval (*"Yes, submit"*). No complaint shall be queued without explicit citizen consent.
 
-### 4.4 Complaint Stacking & Django Admin Management
+### 4.4 Complaint Stacking & Government Admin Dashboard
 - **FR-10 (Dossier Generation):** Upon confirmation, the system shall synthesize an official dual-language dossier (English & Urdu Nastaliq) with tracking ID (`KHI-CIVIC-XXXXX`) and statutory citations (SLGA, KW&SC Act, Articles 9 & 14).
 - **FR-11 (Complaint Stacking):** The system shall store the approved dossier with status `QUEUED` in Postgres, assigned to the resolved agency.
-- **FR-12 (Django Admin RBAC & Group Isolation):**
-  - Departmental access control and user groups shall be managed directly via **Django Admin Panel** using Django's native groups, permissions, and scoped querysets.
-  - Officials assigned to `KW&SC` shall only view KW&SC complaints.
-  - Officials assigned to `KMC` shall only view KMC complaints.
-  - Officials assigned to `SSWMB` shall only view SSWMB complaints.
-  - Officials assigned to `Cantonments` shall only view Cantonment complaints.
+- **FR-12 (Role-Based Government Admin Dashboard & RBAC Isolation):**
+  - The system shall provide dedicated REST APIs (`/api/admin/dashboard/*`) consumed by the React Government Admin Dashboard.
+  - Departmental access control and user groups shall enforce strict scoping via database querysets:
+    - Officials assigned to `KW&SC` shall only access KW&SC complaints.
+    - Officials assigned to `KMC` shall only access KMC complaints.
+    - Officials assigned to `SSWMB` shall only access SSWMB complaints.
+    - Officials assigned to `Cantonments` shall only access Cantonment complaints.
   - `SUPER_ADMIN` shall have full platform visibility and access to system logs and worker queues.
 - **FR-13 (Status Lifecycle Management):** Department officials shall inspect evidence, view clustered community report counts, and transition ticket status (`PENDING` $\rightarrow$ `IN_PROGRESS` $\rightarrow$ `RESOLVED`).
 
