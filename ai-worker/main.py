@@ -1,4 +1,4 @@
-﻿"""
+"""
 AI Worker - consumes ai_queue, orchestrates via LangGraph/LangChain,
 calls models via LiteLLM (docs/ai-system.md).
 
@@ -79,7 +79,7 @@ async def run_graph(job: dict, role: str):
 
 
 async def process_job(r: redis.Redis, job: dict):
-    job_id = job["job_id"]
+    job_id = job.get("job_id", "unknown_job")
     agent_role = job.get("agent_role", "responder")
 
     started_at = time.time()
@@ -88,29 +88,8 @@ async def process_job(r: redis.Redis, job: dict):
         try:
             print(f"[WORKER] Processing job: {job_id}")
 
-            # -----------------------------
-            # Input security check
-            # -----------------------------
-
-            guard = input_guard(
-                job.get("input", "")
-            )
-
-            if not guard["ok"]:
-                raise ValueError(
-                    f"input rejected: {guard['reason']}"
-                )
-
-            if guard.get("flagged"):
-                print(
-                    f"[security] input flagged for job "
-                    f"{job_id}: {guard['reason']}"
-                )
-
-            # -----------------------------
-            # Run worker task
-            # -----------------------------
-
+            # Run AI intelligence pipeline (fetching batch, input guard, multimodal perception,
+            # spatial routing, deduplication, dossier generation, output guard, dispatch)
             result = await asyncio.wait_for(
                 run_graph(
                     job,
@@ -119,27 +98,7 @@ async def process_job(r: redis.Redis, job: dict):
                 timeout=JOB_TIMEOUT_SECONDS,
             )
 
-            out_text = (
-                result
-                if isinstance(result, str)
-                else json.dumps(result)
-            )
-
-            # -----------------------------
-            # Output security check
-            # -----------------------------
-
-            out_guard = output_guard(out_text)
-
-            if not out_guard["ok"]:
-                raise ValueError(
-                    f"output blocked: {out_guard['reason']}"
-                )
-
-            # -----------------------------
             # Save result in Redis
-            # -----------------------------
-
             result_payload = {
                 "status": "done",
                 "result": result,
@@ -151,36 +110,29 @@ async def process_job(r: redis.Redis, job: dict):
                 ex=RESULT_TTL_SECONDS,
             )
 
-            # -----------------------------
-            # Send result back to Django
-            # -----------------------------
+            # Optional callback to legacy worker-result endpoint
+            try:
+                async with httpx.AsyncClient(timeout=3.0) as client:
+                    await client.post(
+                        f"{JOB_CALLBACK_URL}/{job_id}",
+                        json=result_payload,
+                    )
+            except Exception as cb_err:
+                pass
 
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                response = await client.post(
-                    f"{JOB_CALLBACK_URL}/{job_id}",
-                    json=result_payload,
-                )
+            latency = int((time.time() - started_at) * 1000)
+            print(f"[WORKER] Job {job_id} completed in {latency}ms")
 
-                response.raise_for_status()
-
-            latency = int(
-                (time.time() - started_at) * 1000
-            )
-
-            print(
-                f"[WORKER] Job {job_id} completed "
-                f"in {latency}ms"
-            )
+            flagged = False
+            if isinstance(result, dict):
+                flagged = result.get("classification", {}).get("security_flagged", False)
 
             await log_ai_call(
                 job_id=job_id,
                 agent_role=agent_role,
                 status="done",
                 latency_ms=latency,
-                flagged_input=guard.get(
-                    "flagged",
-                    False,
-                ),
+                flagged_input=flagged,
             )
 
         except Exception as exc:
@@ -196,36 +148,25 @@ async def process_job(r: redis.Redis, job: dict):
                 ex=RESULT_TTL_SECONDS,
             )
 
-            # Send error back to Django
+            # Send error back to Django (non-fatal if unreachable)
             try:
-                async with httpx.AsyncClient(
-                    timeout=5.0
-                ) as client:
+                async with httpx.AsyncClient(timeout=3.0) as client:
                     await client.post(
                         f"{JOB_CALLBACK_URL}/{job_id}",
                         json=error_payload,
                     )
-            except Exception as callback_error:
-                print(
-                    f"[WORKER] Callback failed: "
-                    f"{callback_error}"
-                )
+            except Exception:
+                pass
 
-            print(
-                f"[WORKER] Job {job_id} failed: {exc}"
-            )
+            print(f"[WORKER] Job {job_id} failed: {exc}")
 
             await log_ai_call(
                 job_id=job_id,
                 agent_role=agent_role,
                 status="error",
-                latency_ms=int(
-                    (time.time() - started_at) * 1000
-                ),
+                latency_ms=int((time.time() - started_at) * 1000),
                 error=str(exc),
             )
-
-
 
 
 async def heartbeat_loop(r: redis.Redis):
@@ -240,25 +181,27 @@ async def main():
     print(f"AI worker started, listening on '{QUEUE_NAME}'")
     while True:
         try:
-            # Replaced the infinite block with a timeout to prevent socket hangs
             job_data = await r.blpop(QUEUE_NAME, timeout=5)
-
-            # If the queue was empty for 5 seconds, loop and try again
             if not job_data:
                 continue
 
             _, raw_job = job_data
-            job = json.loads(raw_job)
+            try:
+                job = json.loads(raw_job)
+                if isinstance(job, str):
+                    job = {"job_id": job}
+            except Exception:
+                job = {"job_id": str(raw_job)}
+
             asyncio.create_task(process_job(r, job))
 
         except (RedisTimeoutError, TimeoutError):
-            # Suppress socket timeouts and just restart the polling loop
             continue
         except Exception as e:
-            # Catch transient network errors so the worker doesn't die completely
             print(f"Worker polling error: {e}")
             await asyncio.sleep(1)
 
 
 if __name__ == "__main__":
     asyncio.run(main())
+
