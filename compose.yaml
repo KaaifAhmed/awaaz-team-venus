@@ -1,4 +1,4 @@
-﻿services:
+services:
   postgres:
     image: pgvector/pgvector:pg16
     environment:
@@ -44,23 +44,6 @@
       JOB_CALLBACK_URL: http://main-service:8000/api/internal/worker-result
     volumes:
       - ./ai-worker:/app
-      - ./shared:/app/shared
-    depends_on:
-      - redis
-      - main-service
-    command: ["python", "main.py"]
-
-  background-worker:
-    build:
-      context: .
-      dockerfile: background-worker/Dockerfile
-    env_file: .env
-    environment:
-      REDIS_URL: redis://redis_server:6379/0
-      MAIN_SERVICE_URL: http://main-service:8000
-      WHATSAPP_SERVICE_URL: http://whatsapp-service:3000
-    volumes:
-      - ./background-worker:/app
       - ./shared:/app/shared
     depends_on:
       - redis
