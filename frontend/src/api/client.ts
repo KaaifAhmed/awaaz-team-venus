@@ -24,13 +24,19 @@ const CURRENT_USER_KEY = "currentUser";
 const MOCK_API_KEY = "mock_api_enabled";
 const COMPLAINTS_STORAGE_KEY = "khi_civic_complaints_v1";
 
-// Default Mock Mode is true for seamless offline & demonstration resilience
+// Mock mode resolution: checks localStorage, then VITE_ENABLE_MOCK_API, then defaults to Live API in PROD
 export const isMockModeEnabled = (): boolean => {
   const saved = localStorage.getItem(MOCK_API_KEY);
-  if (saved === null) {
-    return true; // Default to true as specified in requirements
+  if (saved !== null) {
+    return saved === "true";
   }
-  return saved === "true";
+  if (typeof import.meta !== "undefined" && import.meta.env?.VITE_ENABLE_MOCK_API !== undefined) {
+    return import.meta.env.VITE_ENABLE_MOCK_API === "true";
+  }
+  if (typeof import.meta !== "undefined" && import.meta.env?.PROD) {
+    return false;
+  }
+  return true;
 };
 
 export const setMockMode = (enabled: boolean): void => {

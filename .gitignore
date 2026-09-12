@@ -1,4 +1,4 @@
-﻿__pycache__/
+__pycache__/
 *.pyc
 .venv/
 venv/
@@ -8,3 +8,4 @@ dist/
 *.sqlite3
 .DS_Store
 whatsapp-service/auth/
+main-service/staticfiles/
