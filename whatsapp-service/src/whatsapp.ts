@@ -1,7 +1,8 @@
-﻿import makeWASocket, {
+import makeWASocket, {
   DisconnectReason,
   useMultiFileAuthState,
   WASocket,
+  downloadMediaMessage,
 } from "@whiskeysockets/baileys";
 import { Boom } from "@hapi/boom";
 import qrcode from "qrcode-terminal";
@@ -42,8 +43,8 @@ class WhatsAppService {
 
       this.sock = makeWASocket({
         auth: state,
-        logger: pino({ level: "silent" }),
-        markOnlineOnConnect: false,
+        printQRInTerminal: false,
+        logger: pino({ level: "silent" }) as any,
       });
 
       this.sock.ev.on("creds.update", saveCreds);
@@ -53,40 +54,35 @@ class WhatsAppService {
 
         if (qr) {
           this.qr = qr;
-          console.log("\n====================================");
-          console.log("SCAN THIS QR CODE WITH WHATSAPP:");
-          console.log("====================================");
+          console.log("\nScan this QR code to connect WhatsApp:\n");
           qrcode.generate(qr, { small: true });
-          console.log("Raw QR String available at GET /qr\n");
         }
 
         if (connection === "open") {
-          console.log("Connected as:", this.sock?.user?.id);
           this.qr = null;
           this.isConnecting = false;
+          console.log("WhatsApp connection established successfully!");
         }
 
         if (connection === "close") {
           this.isConnecting = false;
-          this.sock = null;
-
           const statusCode = (lastDisconnect?.error as Boom)?.output?.statusCode;
-          console.log(`WhatsApp disconnected (status code: ${statusCode || "unknown"})`);
+          const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+
+          console.log(
+            `Connection closed. Status: ${statusCode}. Reconnecting: ${shouldReconnect}`
+          );
 
           if (statusCode === DisconnectReason.loggedOut) {
-            console.log("Logged out. Resetting auth directory for new QR generation.");
-            this.qr = null;
+            console.log("Session logged out. Clearing auth directory...");
             try {
               fs.rmSync(config.authDir, { recursive: true, force: true });
             } catch (err) {
               console.error("Error clearing auth directory:", err);
             }
-            setTimeout(() => this.init(), 3000);
-            return;
           }
 
-          console.log("Reconnecting in 5 seconds...");
-          setTimeout(() => this.init(), 5000);
+          setTimeout(() => this.init(), shouldReconnect ? 5000 : 3000);
         }
       });
 
@@ -121,18 +117,52 @@ class WhatsAppService {
 
       const phone = remoteJid.replace("@s.whatsapp.net", "");
 
+      let mediaBase64: string | null = null;
+      let mediaType: string | null = null;
+
+      // Extract image or audio media attachment
+      const hasImage = Boolean(msg.message.imageMessage);
+      const hasAudio = Boolean(msg.message.audioMessage);
+
+      if (hasImage || hasAudio) {
+        try {
+          console.log(`Downloading inbound ${hasImage ? "image" : "audio"} attachment from ${phone}...`);
+          const buffer = (await downloadMediaMessage(
+            msg,
+            "buffer",
+            {},
+            {
+              logger: pino({ level: "silent" }) as any,
+              reuploadRequest: this.sock?.updateMediaMessage.bind(this.sock) as any,
+            }
+          )) as Buffer;
+
+          if (buffer && buffer.length > 0) {
+            mediaBase64 = buffer.toString("base64");
+            mediaType = hasImage
+              ? msg.message.imageMessage?.mimetype || "image/jpeg"
+              : msg.message.audioMessage?.mimetype || "audio/ogg";
+            console.log(`Successfully downloaded media: ${(buffer.length / 1024).toFixed(1)} KB`);
+          }
+        } catch (mediaErr: any) {
+          console.warn(`Could not download media from WhatsApp message: ${mediaErr?.message || mediaErr}`);
+        }
+      }
+
       const payload = {
         from: phone,
         jid: remoteJid,
         senderName: msg.pushName || null,
         text,
+        media_base64: mediaBase64,
+        media_type: mediaType,
         messageId: msg.key.id,
         timestamp: Number(msg.messageTimestamp),
       };
 
-      console.log(`Inbound message from ${phone}: "${text.slice(0, 60)}"`);
+      console.log(`Inbound message from ${phone}: "${text.slice(0, 60)}" (media: ${mediaType || "none"})`);
 
-      await axios.post(config.mainServiceInboundUrl, payload, { timeout: 5000 });
+      await axios.post(config.mainServiceInboundUrl, payload, { timeout: 15000 });
     } catch (error: any) {
       if (error.config?.url) {
         console.error(

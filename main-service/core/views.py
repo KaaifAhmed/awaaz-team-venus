@@ -731,7 +731,7 @@ class WhatsAppInboundView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        text = data.get("text", "")
+        text = (data.get("text") or "").strip()
         loc = data.get("location") or {}
         lat = loc.get("lat")
         lng = loc.get("lng")
@@ -741,6 +741,35 @@ class WhatsAppInboundView(APIView):
         except (ValueError, TypeError):
             lat = None
             lng = None
+
+        # Process media attachment (image / audio) if present
+        media_base64 = data.get("media_base64") or data.get("image_base64")
+        media_type = data.get("media_type") or ""
+        image_content_file = None
+        audio_content_file = None
+
+        if media_base64:
+            import base64
+            from django.core.files.base import ContentFile
+            try:
+                decoded_bytes = base64.b64decode(media_base64)
+                if "audio" in media_type:
+                    ext = "ogg" if "ogg" in media_type else "mp3"
+                    audio_content_file = ContentFile(decoded_bytes, name=f"wa_{phone}_{uuid.uuid4().hex[:8]}.{ext}")
+                else:
+                    ext = "png" if "png" in media_type else "jpg"
+                    image_content_file = ContentFile(decoded_bytes, name=f"wa_{phone}_{uuid.uuid4().hex[:8]}.{ext}")
+            except Exception as b64_err:
+                logger.warning(f"[WHATSAPP-INBOUND] Failed to decode media attachment: {b64_err}")
+
+        # If user only submitted a photo/audio with no caption text, provide factual description
+        if not text:
+            if image_content_file:
+                text = "Citizen photographic civic grievance submitted via WhatsApp."
+            elif audio_content_file:
+                text = "Citizen voice recording civic grievance submitted via WhatsApp."
+            else:
+                text = "Citizen civic report submitted via WhatsApp."
 
         # Look up or create citizen stub
         user = (
@@ -762,7 +791,7 @@ class WhatsAppInboundView(APIView):
             )
 
         job_id = f"job_{uuid.uuid4().hex[:12]}"
-        JobBuffer.objects.create(
+        job = JobBuffer.objects.create(
             job_id=job_id,
             user=user,
             source="whatsapp",
@@ -771,6 +800,12 @@ class WhatsAppInboundView(APIView):
             lng=lng,
             status="QUEUED",
         )
+        if image_content_file:
+            job.image_file = image_content_file
+            job.save(update_fields=["image_file"])
+        if audio_content_file:
+            job.audio_file = audio_content_file
+            job.save(update_fields=["audio_file"])
 
         enqueue_ai_job(job_id)
 

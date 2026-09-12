@@ -10,6 +10,7 @@ gunicorn==26.2.0
 hiredis==3.4.1
 inflection==0.5.1
 iniconfig==2.3.0
+google-generativeai>=0.8.0
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 packaging==26.3
