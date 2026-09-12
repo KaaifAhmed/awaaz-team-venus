@@ -11,12 +11,17 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "dev-secret-key-change-me-karac
 DEBUG = os.environ.get("DEBUG", "True").lower() in ("true", "1", "yes")
 ALLOWED_HOSTS = [h.strip() for h in os.environ.get("ALLOWED_HOSTS", "*").split(",") if h.strip()]
 ALLOWED_HOSTS.append(".trycloudflare.com")
+ALLOWED_HOSTS.append("https://team-venus-frontend.vercel.app/")
+
+
 CSRF_TRUSTED_ORIGINS = [
     orig.strip()
     for orig in os.environ.get("CSRF_TRUSTED_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://localhost:8000").split(",")
     if orig.strip()
 ]
 CSRF_TRUSTED_ORIGINS.append("https://*.trycloudflare.com")
+CSRF_TRUSTED_ORIGINS.append("https://team-venus-frontend.vercel.app/")
+
 
 
 INSTALLED_APPS = [
