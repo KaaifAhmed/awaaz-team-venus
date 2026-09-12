@@ -87,3 +87,5 @@ xxhash==4.0.1
 yarl==1.24.5
 zipp==4.1.0
 zstandard==0.25.0
+google-auth
+litellm
