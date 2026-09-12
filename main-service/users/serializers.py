@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from .models import LinkedPhone
@@ -109,9 +110,11 @@ class UserSerializer(serializers.ModelSerializer):
             "linked_phones",
         ]
 
+    @extend_schema_field(serializers.ListField(child=serializers.CharField()))
     def get_linked_phones(self, obj):
         return list(obj.linked_phones.values_list("phone_number", flat=True))
 
+    @extend_schema_field(serializers.CharField())
     def get_dashboard_route(self, obj):
         return obj.get_dashboard_route()
 
