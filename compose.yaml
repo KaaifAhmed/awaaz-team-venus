@@ -9,12 +9,22 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d main_db"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     container_name: redis_server
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
 
   main-service:
     build: ./main-service
@@ -23,14 +33,16 @@ services:
       POSTGRES_HOST: postgres
       REDIS_URL: redis://redis_server:6379/0
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
       - "8000:8000"
     volumes:
       - ./main-service:/app
       - media_data:/app/media
-    command: ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--reload"]
+    command: ["sh", "-c", "python manage.py migrate && python manage.py seed_demo_users && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --reload"]
 
   ai-worker:
     build:
@@ -41,13 +53,15 @@ services:
       REDIS_URL: redis://redis_server:6379/0
       MAIN_SERVICE_URL: http://main-service:8000
       WHATSAPP_SERVICE_URL: http://whatsapp-service:3000
-      JOB_CALLBACK_URL: http://main-service:8000/api/internal/worker-result
+      JOB_CALLBACK_URL: http://main-service:8000/api/internal/worker-callback
     volumes:
       - ./ai-worker:/app
       - ./shared:/app/shared
     depends_on:
-      - redis
-      - main-service
+      redis:
+        condition: service_healthy
+      main-service:
+        condition: service_started
     command: ["python", "main.py"]
 
   whatsapp-service:
