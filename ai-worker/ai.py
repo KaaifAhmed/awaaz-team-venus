@@ -928,14 +928,72 @@ async def gemini_multimodal_perception_node(
 
     # ================================================================
     # IMAGE
+    #
+    # NOTE: We fetch and base64-encode the image ourselves rather than
+    # handing litellm a raw URL. LiteLLM's image_handling module runs
+    # SSRF protection on any URL it fetches, and our image URLs point
+    # at the internal Docker network (http://main-service:8000/...),
+    # which resolves to a private container IP and gets blocked with
+    # "URL targets a blocked address". Fetching it ourselves and
+    # passing base64 data avoids that fetch entirely.
     # ================================================================
 
+    image_data_url: Optional[str] = None
+
     if image_url:
+
+        try:
+
+            async with httpx.AsyncClient(timeout=8.0) as img_client:
+
+                img_resp = await img_client.get(image_url)
+
+                if img_resp.status_code == 200 and img_resp.content:
+
+                    import base64
+
+                    mime_type = (
+                        img_resp.headers.get("content-type")
+                        or "image/jpeg"
+                    ).split(";")[0].strip()
+
+                    if not mime_type.startswith("image/"):
+                        mime_type = "image/jpeg"
+
+                    b64_data = base64.b64encode(
+                        img_resp.content
+                    ).decode("utf-8")
+
+                    image_data_url = (
+                        f"data:{mime_type};base64,{b64_data}"
+                    )
+
+                    logger.info(
+                        "[GEMINI] Downloaded image for inline base64 "
+                        f"encoding: {len(img_resp.content)} bytes, "
+                        f"mime={mime_type}"
+                    )
+
+                else:
+
+                    logger.warning(
+                        "[GEMINI] Image fetch returned "
+                        f"status={img_resp.status_code} for {image_url}"
+                    )
+
+        except Exception as img_exc:
+
+            logger.warning(
+                f"[GEMINI] Failed to download image {image_url}: "
+                f"{type(img_exc).__name__}: {img_exc}"
+            )
+
+    if image_data_url:
 
         user_content.append({
             "type": "image_url",
             "image_url": {
-                "url": image_url
+                "url": image_data_url
             }
         })
 
@@ -965,7 +1023,8 @@ async def gemini_multimodal_perception_node(
 
         logger.warning(
             f"[GEMINI] Job {state.get('job_id')} "
-            "contains no text, image, or audio."
+            "contains no usable text, image, or audio "
+            "(image fetch may have failed above)."
         )
 
         return {
@@ -1257,9 +1316,15 @@ Never return explanations outside JSON.
     # If this was image-only, DO NOT pretend it was a sewerage issue.
     if not raw_text:
 
+        reason = (
+            "image download failed"
+            if image_url and not image_data_url
+            else "Gemini call failed"
+        )
+
         logger.warning(
             "[GEMINI] Image-only complaint could not be "
-            "processed by Gemini. Using neutral fallback."
+            f"processed ({reason}). Using neutral fallback."
         )
 
         return {
@@ -1269,7 +1334,8 @@ Never return explanations outside JSON.
             "core_problem": (
                 "Civic infrastructure issue was submitted "
                 "through an image, but automatic visual "
-                "classification was unavailable."
+                "classification was unavailable "
+                f"({reason})."
             )
         }
 
