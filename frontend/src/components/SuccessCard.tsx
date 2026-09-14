@@ -40,41 +40,44 @@ export const SuccessCard: React.FC<SuccessCardProps> = ({
   };
 
   return (
-    <div className="max-w-md w-full bg-white border border-emerald-200 rounded-2xl p-6 sm:p-8 text-center shadow-sm mx-auto animate-in fade-in zoom-in-95 duration-150">
+    <div className="max-w-md w-full bg-surface border border-surface-border rounded-2xl shadow-lg overflow-hidden text-center mx-auto animate-in fade-in zoom-in-95 duration-150">
+      {/* Accent top bar */}
+      <div className="h-1 bg-primary" />
+      <div className="p-6 sm:p-8">
       {/* Success Badge Icon */}
-      <div className="h-16 w-16 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto mb-4 ring-8 ring-emerald-50">
+      <div className="h-16 w-16 bg-primary text-primary-on rounded-full flex items-center justify-center mx-auto mb-4 ring-8 ring-primary-light shadow-md">
         <CheckCircle2 className="w-9 h-9" />
       </div>
 
-      <span className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 mb-2">
+      <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-primary bg-primary-light px-2.5 py-1 rounded-full border border-primary/20 mb-2">
         <ShieldCheck className="w-3.5 h-3.5" />
         Verified Civic Redressal
       </span>
 
-      <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+      <h2 className="text-2xl font-extrabold text-typography-primary tracking-tight mt-1">
         Grievance Formally Filed
       </h2>
-      <p className="text-sm text-slate-600 mt-1">
+      <p className="text-sm text-typography-muted mt-1">
         Your complaint is entered into the official statutory registry.
       </p>
 
       {/* Tracking ID Badge Container */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 my-6 text-center">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 block mb-1">
+      <div className="bg-surface-subtle border border-surface-border rounded-xl p-4 my-6 text-center">
+        <span className="text-xs font-semibold uppercase tracking-wider text-typography-subtle block mb-1">
           Official Tracking ID
         </span>
-        <div className="text-2xl sm:text-3xl font-mono font-bold text-slate-900 tracking-wider">
+        <div className="text-2xl sm:text-3xl font-mono font-extrabold text-typography-primary tracking-wider">
           {trackingId}
         </div>
         <button
           type="button"
           onClick={handleCopy}
-          className="inline-flex items-center gap-1.5 text-xs text-emerald-800 font-medium hover:text-emerald-950 mt-2 px-3 py-1 rounded-md hover:bg-emerald-50 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-primary font-medium hover:text-primary-hover mt-2 px-3 py-1 rounded-md hover:bg-primary-light transition-colors"
         >
           {copied ? (
             <>
-              <Check className="w-3.5 h-3.5 text-emerald-700" />
-              <span className="text-emerald-700 font-semibold">Copied to Clipboard!</span>
+              <Check className="w-3.5 h-3.5 text-status-resolved" />
+              <span className="text-status-resolved font-semibold">Copied to Clipboard!</span>
             </>
           ) : (
             <>
@@ -86,19 +89,19 @@ export const SuccessCard: React.FC<SuccessCardProps> = ({
       </div>
 
       {/* Routing & Cluster Confirmation Box */}
-      <div className="bg-emerald-50/70 border border-emerald-200 rounded-xl p-4 text-left text-xs space-y-2 mb-6">
+      <div className="bg-primary-light/60 border border-primary/20 rounded-xl p-4 text-left text-xs space-y-2 mb-6">
         <div className="flex items-center justify-between">
-          <span className="font-semibold text-slate-700">Assigned Department:</span>
-          <span className="font-bold text-emerald-900">{targetAuthority}</span>
+          <span className="font-semibold text-typography-secondary">Assigned Department:</span>
+          <span className="font-bold text-primary">{targetAuthority}</span>
         </div>
-        <div className="text-slate-600 font-medium leading-tight">
+        <div className="text-typography-muted font-medium leading-tight">
           {getAuthorityFullName(targetAuthority)}
         </div>
-        <div className="flex items-center justify-between pt-1 border-t border-emerald-200/60">
-          <span className="font-semibold text-slate-700">Initial Status:</span>
+        <div className="flex items-center justify-between pt-1 border-t border-primary/10">
+          <span className="font-semibold text-typography-secondary">Initial Status:</span>
           <StatusBadge status="PENDING" size="sm" />
         </div>
-        <div className="pt-2 border-t border-emerald-200/60 text-emerald-900 font-medium">
+        <div className="pt-2 border-t border-primary/10 text-primary font-medium">
           👥 Clustered with {communityCount} neighboring reports to elevate dispatch priority.
         </div>
       </div>
@@ -107,11 +110,12 @@ export const SuccessCard: React.FC<SuccessCardProps> = ({
       <button
         type="button"
         onClick={onReset}
-        className="w-full h-11 bg-emerald-900 text-white rounded-xl font-semibold text-sm hover:bg-emerald-950 active:bg-black transition-colors flex items-center justify-center gap-2 shadow-xs focus:ring-2 focus:ring-emerald-700 focus:ring-offset-2"
+        className="w-full h-11 bg-primary text-primary-on rounded-xl font-semibold text-sm hover:bg-primary-hover active:opacity-90 transition-all flex items-center justify-center gap-2 shadow-md focus:ring-2 focus:ring-primary focus:ring-offset-2"
       >
         <span>Report Another Grievance</span>
         <ArrowRight className="w-4 h-4" />
       </button>
+      </div>
     </div>
   );
 };

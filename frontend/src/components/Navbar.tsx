@@ -15,15 +15,15 @@ export const Navbar: React.FC = () => {
   const getOrgIcon = (org?: string | null) => {
     switch (org) {
       case "KWSC":
-        return <Landmark className="w-4 h-4 text-emerald-800" />;
+        return <Landmark className="w-4 h-4 text-agency-kwsc" />;
       case "KMC":
-        return <Building2 className="w-4 h-4 text-sky-800" />;
+        return <Building2 className="w-4 h-4 text-agency-kmc" />;
       case "SSWMB":
-        return <Trash2 className="w-4 h-4 text-amber-800" />;
+        return <Trash2 className="w-4 h-4 text-agency-sswmb" />;
       case "CANTONMENT":
-        return <ShieldAlert className="w-4 h-4 text-purple-800" />;
+        return <ShieldAlert className="w-4 h-4 text-agency-cantonment" />;
       default:
-        return <ShieldCheck className="w-4 h-4 text-emerald-800" />;
+        return <ShieldCheck className="w-4 h-4 text-primary" />;
     }
   };
 
@@ -38,22 +38,24 @@ export const Navbar: React.FC = () => {
     }
     if (user.role === "GOVT_OFFICIAL") {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-900 border border-emerald-300">
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-primary-light text-primary border border-primary/20 shadow-xs">
           {getOrgIcon(user.assignedOrg)}
           {user.assignedOrg} Official
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-800 border border-slate-300">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full bg-surface-hover text-typography-primary border border-surface-border">
         🏛️ Citizen Portal
       </span>
     );
   };
 
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="bg-surface/95 backdrop-blur-xs border-b border-surface-border sticky top-0 z-40 shadow-xs">
+      {/* Accent strip */}
+      <div className="h-0.5 bg-primary" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-15 flex items-center justify-between" style={{height: '3.75rem'}}>
         {/* Brand / Logo */}
         <div
           onClick={() => {
@@ -65,49 +67,49 @@ export const Navbar: React.FC = () => {
           }}
           className="flex items-center gap-3 cursor-pointer select-none"
         >
-          <div className="w-10 h-10 rounded-xl bg-emerald-900 text-white flex items-center justify-center font-bold shadow-xs">
-            <ShieldCheck className="w-6 h-6 text-white" />
+          <div className="w-9 h-9 rounded-xl bg-primary text-primary-on flex items-center justify-center shadow-xs">
+            <ShieldCheck className="w-5 h-5 text-primary-on" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-900 text-base sm:text-lg tracking-tight">
+              <span className="font-bold text-typography-primary text-sm sm:text-base tracking-tight">
                 Karachi Civic AI Engine
               </span>
-              <span className="hidden sm:inline-block text-[11px] font-semibold uppercase px-2 py-0.5 bg-emerald-100 text-emerald-900 rounded-sm">
+              <span className="hidden sm:inline-block text-[10px] font-bold uppercase px-1.5 py-0.5 bg-primary-light text-primary rounded tracking-wider">
                 CWA 2026
               </span>
             </div>
-            <p className="text-xs text-slate-500 hidden sm:block">
-              Provincial Statutory Redressal & Inter-Agency Coordination
+            <p className="text-[11px] text-typography-muted hidden sm:block leading-tight">
+              Provincial Statutory Redressal &amp; Inter-Agency Coordination
             </p>
           </div>
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {/* Mock Mode Switch */}
           <button
             type="button"
             onClick={toggleMockMode}
             title={mockMode ? "Running in Offline Mock Mode" : "Connected to Live Backend API"}
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-lg border transition-colors ${
+            className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-all ${
               mockMode
-                ? "bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100"
-                : "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200"
+                ? "bg-primary-light text-primary border-primary/20 hover:bg-primary-light/80 shadow-xs"
+                : "bg-surface-hover text-typography-muted border-surface-border hover:bg-surface-subtle"
             }`}
           >
-            <Database className="w-3.5 h-3.5 text-emerald-800" />
+            <Database className="w-3.5 h-3.5" />
             <span className="hidden md:inline">
-              {mockMode ? "Mock Demo Mode" : "Live API"}
+              {mockMode ? "Mock Demo" : "Live API"}
             </span>
-            <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+            <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${mockMode ? 'bg-primary' : 'bg-status-resolved'}`}></span>
           </button>
 
           {user && (
             <>
               {/* Role Badge */}
               <div className="hidden sm:flex items-center gap-2">
-                <span className="text-xs text-slate-600 font-medium">
+                <span className="text-xs text-typography-muted font-medium">
                   {user.fullName}
                 </span>
                 {getRoleLabel()}
@@ -117,10 +119,10 @@ export const Navbar: React.FC = () => {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="inline-flex items-center gap-1.5 h-9 px-3 text-xs font-medium rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-red-700 transition-colors"
+                className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-medium rounded-lg border border-surface-border text-typography-muted hover:bg-hazard-p0-light hover:text-hazard-p0 hover:border-hazard-p0-border transition-all"
                 title="Log Out"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Logout</span>
               </button>
             </>

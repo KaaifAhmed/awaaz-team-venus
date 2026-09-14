@@ -7,17 +7,65 @@ export default {
   theme: {
     extend: {
       colors: {
-        emerald: {
-          900: '#0F5132',
-          950: '#0B3D26',
+        // Semantic Brand Tokens (Dynamic CSS variables)
+        primary: {
+          DEFAULT: 'var(--color-primary)',
+          hover:   'var(--color-primary-hover)',
+          light:   'var(--color-primary-light)',
+          on:      'var(--color-on-primary)',
         },
-        civic: {
-          green: '#0F5132',
-          greenDark: '#0B3D26',
-          greenLight: '#E8F5E9',
-          crimson: '#B91C1C',
-          amber: '#B45309',
-          blue: '#0284C7',
+        accent: {
+          DEFAULT: 'var(--color-accent)',
+          light:   'var(--color-accent-light)',
+        },
+        // Surfaces, canvas, and borders
+        surface: {
+          DEFAULT: 'var(--color-surface)',
+          hover:   'var(--color-surface-hover)',
+          subtle:  'var(--color-surface-subtle)',
+          border:  'var(--color-border)',
+          'border-strong': 'var(--color-border-strong)',
+        },
+        'bg-app': 'var(--color-bg-app)',
+
+        // Typography / Semantic text
+        typography: {
+          primary:   'var(--color-text-primary)',
+          secondary: 'var(--color-text-secondary)',
+          muted:     'var(--color-text-muted)',
+          subtle:    'var(--color-text-subtle)',
+        },
+
+        // Agency Identity Tokens
+        agency: {
+          kwsc:       'var(--color-agency-kwsc)',
+          kmc:        'var(--color-agency-kmc)',
+          sswmb:      'var(--color-agency-sswmb)',
+          cantonment: 'var(--color-agency-cantonment)',
+        },
+
+        // Operational Hazard & Status Tokens
+        hazard: {
+          p0: {
+            DEFAULT: 'var(--color-p0-hazard)',
+            light:   'var(--color-p0-hazard-light)',
+            border:  'var(--color-p0-hazard-border)',
+          },
+          p1: {
+            DEFAULT: 'var(--color-p1-major)',
+            light:   'var(--color-p1-major-light)',
+            border:  'var(--color-p1-major-border)',
+          },
+          p2: {
+            DEFAULT: 'var(--color-p2-routine)',
+            light:   'var(--color-p2-routine-light)',
+            border:  'var(--color-p2-routine-border)',
+          },
+        },
+        status: {
+          pending:    'var(--color-status-pending)',
+          inProgress: 'var(--color-status-in-progress)',
+          resolved:   'var(--color-status-resolved)',
         },
       },
       spacing: {

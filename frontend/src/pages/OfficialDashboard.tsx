@@ -67,36 +67,36 @@ export const OfficialDashboard: React.FC = () => {
         return {
           name: "Karachi Water & Sewerage Corporation (KW&SC)",
           sub: "Central Operational Command — Water & Sewerage Sub-Divisions",
-          icon: <Landmark className="w-5 h-5 text-emerald-800" />,
-          accent: "border-emerald-600",
+          icon: <Landmark className="w-5 h-5 text-agency-kwsc" />,
+          accent: "border-agency-kwsc",
         };
       case "KMC":
         return {
           name: "Karachi Metropolitan Corporation (KMC)",
           sub: "Engineering Services & Arterial Road Maintenance Directorate",
-          icon: <Building2 className="w-5 h-5 text-sky-800" />,
-          accent: "border-sky-600",
+          icon: <Building2 className="w-5 h-5 text-agency-kmc" />,
+          accent: "border-agency-kmc",
         };
       case "SSWMB":
         return {
           name: "Sindh Solid Waste Management Board (SSWMB)",
           sub: "Municipal Solid Waste Collection & Stormwater Nullah Operations",
-          icon: <Trash2 className="w-5 h-5 text-amber-800" />,
-          accent: "border-amber-600",
+          icon: <Trash2 className="w-5 h-5 text-agency-sswmb" />,
+          accent: "border-agency-sswmb",
         };
       case "CANTONMENT":
         return {
           name: "Cantonment Boards Administration (CBC/MOC)",
           sub: "Station Headquarters & Military Lands Municipal Services",
-          icon: <ShieldAlert className="w-5 h-5 text-purple-800" />,
-          accent: "border-purple-600",
+          icon: <ShieldAlert className="w-5 h-5 text-agency-cantonment" />,
+          accent: "border-agency-cantonment",
         };
       default:
         return {
           name: org,
           sub: "Municipal Command",
           icon: <Landmark className="w-5 h-5" />,
-          accent: "border-slate-600",
+          accent: "border-surface-border",
         };
     }
   };
@@ -105,16 +105,18 @@ export const OfficialDashboard: React.FC = () => {
 
   // Triage KPI Metrics Calculation
   const kpis = useMemo(() => {
-    const totalActive = complaints.filter((c) => c.official_status !== "RESOLVED").length;
-    const pendingCount = complaints.filter((c) => c.official_status === "PENDING").length;
-    const inProgressCount = complaints.filter((c) => c.official_status === "IN_PROGRESS").length;
-    const p0Emergencies = complaints.filter((c) => c.severity === "P0" && c.official_status !== "RESOLVED").length;
+    const list = Array.isArray(complaints) ? complaints : [];
+    const totalActive = list.filter((c) => c.official_status !== "RESOLVED").length;
+    const pendingCount = list.filter((c) => c.official_status === "PENDING").length;
+    const inProgressCount = list.filter((c) => c.official_status === "IN_PROGRESS").length;
+    const p0Emergencies = list.filter((c) => c.severity === "P0" && c.official_status !== "RESOLVED").length;
     return { totalActive, pendingCount, inProgressCount, p0Emergencies };
   }, [complaints]);
 
   // Filtered complaints
   const filteredComplaints = useMemo(() => {
-    return complaints.filter((item) => {
+    const list = Array.isArray(complaints) ? complaints : [];
+    return list.filter((item) => {
       if (statusFilter !== "ALL" && item.official_status !== statusFilter) {
         return false;
       }
@@ -173,33 +175,33 @@ export const OfficialDashboard: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Scoped Department Banner */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className={`bg-surface border border-surface-border rounded-2xl p-6 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-l-4 ${dept.accent}`}>
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0 border border-slate-200">
+          <div className="w-12 h-12 rounded-xl bg-surface-subtle flex items-center justify-center shrink-0 border border-surface-border shadow-xs">
             {dept.icon}
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-extrabold text-typography-primary tracking-tight">
                 {dept.name}
               </h1>
-              <span className="text-[11px] font-semibold uppercase px-2 py-0.5 bg-emerald-100 text-emerald-900 rounded-md">
+              <span className="text-[11px] font-bold uppercase px-2 py-0.5 bg-primary-light text-primary rounded-md tracking-wider">
                 Official Jurisdiction
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">{dept.sub}</p>
+            <p className="text-xs text-typography-muted mt-0.5">{dept.sub}</p>
           </div>
         </div>
 
         {/* Agency Switcher (convenience for demo & super admin evaluation) */}
         <div className="flex items-center gap-2 self-start md:self-auto">
-          <span className="text-xs text-slate-400 font-medium">Department:</span>
+          <span className="text-xs text-typography-muted font-medium">Department:</span>
           <select
             value={activeOrg}
             onChange={(e) => setActiveOrg(e.target.value as AuthorityOrg)}
-            className="h-9 px-3 text-xs font-semibold border border-slate-300 rounded-xl bg-slate-50 focus:ring-2 focus:ring-emerald-700 outline-none text-slate-800"
+            className="h-9 px-3 text-xs font-semibold border border-surface-border rounded-xl bg-surface focus:ring-2 focus:ring-primary outline-none text-typography-primary shadow-xs"
           >
-            <option value="KWSC">KW&SC (Water & Sewerage)</option>
+            <option value="KWSC">KW&amp;SC (Water &amp; Sewerage)</option>
             <option value="KMC">KMC (Arterial Roads)</option>
             <option value="SSWMB">SSWMB (Solid Waste)</option>
             <option value="CANTONMENT">Cantonment Boards (CBC)</option>
@@ -208,7 +210,7 @@ export const OfficialDashboard: React.FC = () => {
           <button
             type="button"
             onClick={loadComplaints}
-            className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors border border-slate-200"
+            className="p-2 text-typography-muted hover:text-typography-primary hover:bg-surface-subtle rounded-xl transition-all border border-surface-border"
             title="Refresh Feed"
           >
             <RefreshCw className="w-4 h-4" />
@@ -219,90 +221,90 @@ export const OfficialDashboard: React.FC = () => {
       {/* Triage KPI Metrics Row (4 Cards) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Active Clusters */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+        <div className="bg-surface border border-surface-border border-l-4 border-l-slate-400 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-typography-secondary uppercase tracking-wider">
               Active Clusters
             </span>
-            <Users className="w-4 h-4 text-slate-400" />
+            <Users className="w-4 h-4 text-typography-subtle" />
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-1">
+          <div className="text-3xl font-extrabold text-typography-primary mt-2">
             {kpis.totalActive}
           </div>
-          <div className="text-[11px] text-slate-500 mt-0.5">
+          <div className="text-[11px] text-typography-muted mt-0.5">
             Stacked neighborhood reports
           </div>
         </div>
 
         {/* KPI 2: Pending Action */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+        <div className="bg-surface border border-surface-border border-l-4 border-l-hazard-p1 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-amber-700 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-hazard-p1 uppercase tracking-wider">
               Pending Action
             </span>
-            <Clock className="w-4 h-4 text-amber-600" />
+            <Clock className="w-4 h-4 text-hazard-p1" />
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-1">
+          <div className="text-3xl font-extrabold text-typography-primary mt-2">
             {kpis.pendingCount}
           </div>
-          <div className="text-[11px] text-amber-800 font-medium mt-0.5">
+          <div className="text-[11px] text-hazard-p1 font-medium mt-0.5">
             Awaiting field crew assignment
           </div>
         </div>
 
         {/* KPI 3: In Progress */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs">
+        <div className="bg-surface border border-surface-border border-l-4 border-l-agency-kmc rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-sky-700 uppercase tracking-wider">
+            <span className="text-xs font-semibold text-agency-kmc uppercase tracking-wider">
               Crews Dispatched
             </span>
-            <Wrench className="w-4 h-4 text-sky-600" />
+            <Wrench className="w-4 h-4 text-agency-kmc" />
           </div>
-          <div className="text-2xl font-bold text-slate-900 mt-1">
+          <div className="text-3xl font-extrabold text-typography-primary mt-2">
             {kpis.inProgressCount}
           </div>
-          <div className="text-[11px] text-sky-800 font-medium mt-0.5">
+          <div className="text-[11px] text-agency-kmc font-medium mt-0.5">
             Technical remediation active
           </div>
         </div>
 
         {/* KPI 4: Emergency P0 (Highlighted) */}
-        <div className="bg-red-50/40 border-2 border-red-300 border-l-4 border-l-red-700 rounded-xl p-4 shadow-xs">
+        <div className="bg-hazard-p0-light border border-hazard-p0-border border-l-4 border-l-hazard-p0 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-red-800 uppercase tracking-wider">
+            <span className="text-xs font-bold text-hazard-p0 uppercase tracking-wider">
               🚨 P0 Emergency
             </span>
-            <AlertTriangle className="w-4 h-4 text-red-600 animate-pulse" />
+            <AlertTriangle className="w-4 h-4 text-hazard-p0 animate-pulse" />
           </div>
-          <div className="text-2xl font-bold text-red-900 mt-1">
+          <div className="text-3xl font-extrabold text-hazard-p0 mt-2">
             {kpis.p0Emergencies}
           </div>
-          <div className="text-[11px] text-red-700 font-medium mt-0.5">
+          <div className="text-[11px] text-hazard-p0 font-medium mt-0.5">
             Critical public hazard priority
           </div>
         </div>
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="bg-surface border border-surface-border rounded-xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-2 flex-1">
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by Tracking ID, Landmark (e.g. Disco Bakery), or Keyword..."
-            className="w-full max-w-md h-9 px-3 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-700 outline-none bg-white"
+            className="w-full max-w-md h-9 px-3 text-xs border border-surface-border rounded-lg focus:ring-2 focus:ring-primary outline-none bg-surface text-typography-primary"
           />
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-1 text-xs text-slate-600">
+          <div className="flex items-center gap-1 text-xs text-typography-secondary">
             <Filter className="w-3.5 h-3.5" />
             <span className="font-semibold">Status:</span>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-8 px-2 text-xs border border-slate-300 rounded-md bg-white outline-none"
+              className="h-8 px-2 text-xs border border-surface-border rounded-md bg-surface text-typography-primary outline-none"
             >
               <option value="ALL">All Statuses</option>
               <option value="PENDING">Pending Only</option>
@@ -311,12 +313,12 @@ export const OfficialDashboard: React.FC = () => {
             </select>
           </div>
 
-          <div className="flex items-center gap-1 text-xs text-slate-600">
+          <div className="flex items-center gap-1 text-xs text-typography-secondary">
             <span className="font-semibold">Severity:</span>
             <select
               value={severityFilter}
               onChange={(e) => setSeverityFilter(e.target.value)}
-              className="h-8 px-2 text-xs border border-slate-300 rounded-md bg-white outline-none"
+              className="h-8 px-2 text-xs border border-surface-border rounded-md bg-surface text-typography-primary outline-none"
             >
               <option value="ALL">All Severities</option>
               <option value="P0">P0 Hazard Only</option>
@@ -328,21 +330,21 @@ export const OfficialDashboard: React.FC = () => {
       </div>
 
       {/* Scoped Complaints Table */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
+      <div className="bg-surface border border-surface-border rounded-2xl shadow-xs overflow-hidden">
         {loading ? (
           <div className="p-12 text-center">
-            <Loader2 className="w-8 h-8 animate-spin text-emerald-900 mx-auto mb-2" />
-            <span className="text-xs text-slate-500 font-medium">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-2" />
+            <span className="text-xs text-typography-muted font-medium">
               Fetching departmental complaint queue...
             </span>
           </div>
         ) : filteredComplaints.length === 0 ? (
           <div className="p-12 text-center">
-            <CheckCircle2 className="w-10 h-10 text-emerald-700 mx-auto mb-2" />
-            <h3 className="font-bold text-sm text-slate-900">
+            <CheckCircle2 className="w-10 h-10 text-primary mx-auto mb-2" />
+            <h3 className="font-bold text-sm text-typography-primary">
               No matching departmental complaints
             </h3>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-typography-muted mt-1">
               All grievances in this view have been resolved or filtered out.
             </p>
           </div>
@@ -350,7 +352,7 @@ export const OfficialDashboard: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                <tr className="bg-surface-subtle border-b border-surface-border text-[11px] font-bold uppercase tracking-wider text-typography-muted">
                   <th className="py-3 px-4">Tracking ID</th>
                   <th className="py-3 px-4">Category & Severity</th>
                   <th className="py-3 px-4">Landmark / Location</th>
@@ -360,20 +362,20 @@ export const OfficialDashboard: React.FC = () => {
                   <th className="py-3 px-4 text-right">Operational Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+              <tbody className="divide-y divide-surface-border text-xs text-typography-secondary">
                 {filteredComplaints.map((item) => (
                   <tr
                     key={item.master_incident_id}
-                    className="hover:bg-slate-50/80 transition-colors"
+                    className="hover:bg-surface-subtle/80 transition-colors"
                   >
                     {/* Tracking ID */}
-                    <td className="py-3.5 px-4 font-mono font-bold text-slate-900 whitespace-nowrap">
+                    <td className="py-3.5 px-4 font-mono font-bold text-typography-primary whitespace-nowrap">
                       {item.tracking_id}
                     </td>
 
                     {/* Category & Severity */}
                     <td className="py-3.5 px-4">
-                      <div className="font-semibold text-slate-900">
+                      <div className="font-semibold text-typography-primary">
                         {item.issue_category}
                       </div>
                       <div className="mt-1">
@@ -384,15 +386,15 @@ export const OfficialDashboard: React.FC = () => {
                     {/* Landmark */}
                     <td className="py-3.5 px-4 max-w-[200px]">
                       <div className="flex items-start gap-1">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                        <MapPin className="w-3.5 h-3.5 text-typography-subtle shrink-0 mt-0.5" />
                         <span className="line-clamp-2">{item.landmark}</span>
                       </div>
                     </td>
 
                     {/* Community Impact */}
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1 font-semibold text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[11px]">
-                        <Users className="w-3 h-3 text-emerald-800" />
+                      <span className="inline-flex items-center gap-1 font-semibold text-primary bg-primary-light px-2 py-0.5 rounded-full border border-primary/20 text-[11px]">
+                        <Users className="w-3 h-3 text-primary" />
                         {item.community_reports_count} reports stacked
                       </span>
                     </td>
@@ -402,7 +404,7 @@ export const OfficialDashboard: React.FC = () => {
                       {item.evidence_photos && item.evidence_photos.length > 0 ? (
                         <div
                           onClick={() => handleOpenDossier(item.master_incident_id)}
-                          className="relative h-10 w-10 rounded-lg overflow-hidden border border-slate-200 cursor-pointer group shadow-2xs"
+                          className="relative h-10 w-10 rounded-lg overflow-hidden border border-surface-border cursor-pointer group shadow-2xs"
                         >
                           <img
                             src={item.evidence_photos[0]}
@@ -414,7 +416,7 @@ export const OfficialDashboard: React.FC = () => {
                           </div>
                         </div>
                       ) : (
-                        <span className="text-[11px] text-slate-400 italic">None</span>
+                        <span className="text-[11px] text-typography-subtle italic">None</span>
                       )}
                     </td>
 
@@ -429,7 +431,7 @@ export const OfficialDashboard: React.FC = () => {
                         type="button"
                         onClick={() => handleOpenDossier(item.master_incident_id)}
                         disabled={loadingDossier}
-                        className="h-8 px-3 text-xs font-semibold bg-slate-900 text-white rounded-lg hover:bg-black active:scale-95 transition-all shadow-xs inline-flex items-center gap-1.5"
+                        className="h-8 px-3 text-xs font-semibold bg-primary text-primary-on rounded-lg hover:bg-primary-hover active:opacity-90 transition-all shadow-xs inline-flex items-center gap-1.5"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>Open Dossier</span>

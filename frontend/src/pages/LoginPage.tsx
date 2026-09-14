@@ -60,23 +60,26 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-slate-50">
-      <div className="max-w-md w-full bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8 animate-in fade-in duration-150">
+    <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4 bg-bg-app">
+      <div className="max-w-md w-full bg-surface border border-surface-border rounded-2xl shadow-lg overflow-hidden animate-in fade-in duration-150">
+        {/* Primary accent strip */}
+        <div className="h-1 bg-primary" />
+        <div className="p-6 sm:p-8">
         {/* Crest & Title Header */}
         <div className="text-center mb-6">
-          <div className="w-14 h-14 bg-emerald-900 text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-xs">
+          <div className="w-14 h-14 bg-primary text-primary-on rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md ring-4 ring-primary-light">
             <ShieldCheck className="w-8 h-8" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-extrabold text-typography-primary tracking-tight">
             Karachi Civic AI Engine
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-typography-muted mt-1">
             Government of Sindh — Inter-Agency Civic Redressal Portal
           </p>
         </div>
 
         {/* Dual-Portal Segmented Switcher */}
-        <div className="bg-slate-100 p-1 rounded-xl flex items-center mb-6">
+        <div className="bg-surface-subtle p-1 rounded-xl flex items-center mb-6 border border-surface-border">
           <button
             type="button"
             onClick={() => {
@@ -85,8 +88,8 @@ export const LoginPage: React.FC = () => {
             }}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
               portalTab === "citizen"
-                ? "bg-emerald-900 text-white shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-primary text-primary-on shadow-xs"
+                : "text-typography-secondary hover:text-typography-primary"
             }`}
           >
             <span>🏛️ Citizen Access</span>
@@ -99,8 +102,8 @@ export const LoginPage: React.FC = () => {
             }}
             className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
               portalTab === "official"
-                ? "bg-emerald-900 text-white shadow-xs"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-primary text-primary-on shadow-xs"
+                : "text-typography-secondary hover:text-typography-primary"
             }`}
           >
             <span>🛡️ Official Portal</span>
@@ -109,7 +112,7 @@ export const LoginPage: React.FC = () => {
 
         {/* Error Alert */}
         {errorMsg && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 text-xs rounded-xl flex items-start gap-2">
+          <div className="mb-4 p-3 bg-hazard-p0-light border border-hazard-p0-border text-hazard-p0 text-xs rounded-xl flex items-start gap-2">
             <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{errorMsg}</span>
           </div>
@@ -118,7 +121,7 @@ export const LoginPage: React.FC = () => {
         {/* Login Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-typography-secondary mb-1">
               {portalTab === "citizen"
                 ? "Citizen CNIC / National ID"
                 : "Government Officer CNIC / ID"}
@@ -129,15 +132,15 @@ export const LoginPage: React.FC = () => {
               onChange={handleCnicChange}
               placeholder="42101-XXXXXXX-X"
               maxLength={15}
-              className="w-full h-11 px-3.5 text-sm font-mono border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 outline-none transition-all bg-white"
+              className="w-full h-11 px-3.5 text-sm font-mono border border-surface-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-surface text-typography-primary"
             />
-            <span className="text-[11px] text-slate-400 mt-1 block">
+            <span className="text-[11px] text-typography-subtle mt-1 block">
               Format: 42XXX-XXXXXXX-X (13 Digits)
             </span>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-typography-secondary mb-1">
               Secure Password / Passcode
             </label>
             <div className="relative">
@@ -146,12 +149,12 @@ export const LoginPage: React.FC = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full h-11 px-3.5 pr-10 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 outline-none transition-all bg-white"
+                className="w-full h-11 px-3.5 pr-10 text-sm border border-surface-border rounded-xl focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all bg-surface text-typography-primary"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-3 text-typography-subtle hover:text-typography-secondary"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -161,7 +164,7 @@ export const LoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-11 bg-emerald-900 text-white font-semibold text-sm rounded-xl shadow-xs hover:bg-emerald-950 active:bg-black transition-colors flex items-center justify-center gap-2 mt-6 disabled:opacity-50"
+            className="w-full h-11 bg-primary text-primary-on font-semibold text-sm rounded-xl shadow-md hover:bg-primary-hover active:opacity-90 transition-all flex items-center justify-center gap-2 mt-6 disabled:opacity-50"
           >
             {loading ? (
               <>
@@ -178,12 +181,12 @@ export const LoginPage: React.FC = () => {
         </form>
 
         {/* Quick-Switch Demo Persona Chips */}
-        <div className="mt-8 pt-6 border-t border-slate-200">
+        <div className="mt-8 pt-6 border-t border-surface-border">
           <div className="flex items-center justify-between mb-2.5">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-typography-subtle">
               ⚡ Quick-Switch Demo Personas
             </span>
-            <span className="text-[10px] text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded">
+            <span className="text-[10px] text-primary font-semibold bg-primary-light px-2 py-0.5 rounded">
               1-Tap Fill
             </span>
           </div>
@@ -194,14 +197,14 @@ export const LoginPage: React.FC = () => {
               onClick={() => applyDemoPersona("42101-1234567-1", "citizen")}
               className={`p-2 text-left rounded-lg border text-xs transition-colors flex items-center gap-2 ${
                 cnic === "42101-1234567-1"
-                  ? "border-emerald-700 bg-emerald-50 text-emerald-900"
-                  : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                  ? "border-primary bg-primary-light text-primary"
+                  : "border-surface-border bg-surface-subtle text-typography-secondary hover:bg-surface-hover"
               }`}
             >
-              <UserCheck className="w-3.5 h-3.5 shrink-0 text-emerald-800" />
+              <UserCheck className="w-3.5 h-3.5 shrink-0 text-primary" />
               <div className="truncate">
                 <div className="font-semibold truncate">Citizen Demo</div>
-                <div className="text-[10px] text-slate-500 font-mono">Farhan (Gulshan)</div>
+                <div className="text-[10px] text-typography-muted font-mono">Farhan (Gulshan)</div>
               </div>
             </button>
 
@@ -210,14 +213,14 @@ export const LoginPage: React.FC = () => {
               onClick={() => applyDemoPersona("42201-1111111-1", "official")}
               className={`p-2 text-left rounded-lg border text-xs transition-colors flex items-center gap-2 ${
                 cnic === "42201-1111111-1"
-                  ? "border-emerald-700 bg-emerald-50 text-emerald-900"
-                  : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                  ? "border-agency-kwsc bg-primary-light text-agency-kwsc"
+                  : "border-surface-border bg-surface-subtle text-typography-secondary hover:bg-surface-hover"
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-emerald-800" />
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-agency-kwsc" />
               <div className="truncate">
                 <div className="font-semibold truncate">KW&SC SDO</div>
-                <div className="text-[10px] text-slate-500 font-mono">Engr. Tariq Aziz</div>
+                <div className="text-[10px] text-typography-muted font-mono">Engr. Tariq Aziz</div>
               </div>
             </button>
 
@@ -226,14 +229,14 @@ export const LoginPage: React.FC = () => {
               onClick={() => applyDemoPersona("42201-2222222-2", "official")}
               className={`p-2 text-left rounded-lg border text-xs transition-colors flex items-center gap-2 ${
                 cnic === "42201-2222222-2"
-                  ? "border-emerald-700 bg-emerald-50 text-emerald-900"
-                  : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                  ? "border-agency-kmc bg-sky-50 text-agency-kmc"
+                  : "border-surface-border bg-surface-subtle text-typography-secondary hover:bg-surface-hover"
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-sky-800" />
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-agency-kmc" />
               <div className="truncate">
                 <div className="font-semibold truncate">KMC Officer</div>
-                <div className="text-[10px] text-slate-500 font-mono">Syed Zafar Abbas</div>
+                <div className="text-[10px] text-typography-muted font-mono">Syed Zafar Abbas</div>
               </div>
             </button>
 
@@ -242,17 +245,18 @@ export const LoginPage: React.FC = () => {
               onClick={() => applyDemoPersona("42000-0000000-0", "official")}
               className={`p-2 text-left rounded-lg border text-xs transition-colors flex items-center gap-2 ${
                 cnic === "42000-0000000-0"
-                  ? "border-emerald-700 bg-emerald-50 text-emerald-900"
-                  : "border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100"
+                  ? "border-agency-cantonment bg-purple-50 text-agency-cantonment"
+                  : "border-surface-border bg-surface-subtle text-typography-secondary hover:bg-surface-hover"
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-purple-800" />
+              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-agency-cantonment" />
               <div className="truncate">
                 <div className="font-semibold truncate">Super Admin</div>
-                <div className="text-[10px] text-slate-500 font-mono">Commissioner HQ</div>
+                <div className="text-[10px] text-typography-muted font-mono">Commissioner HQ</div>
               </div>
             </button>
           </div>
+        </div>
         </div>
       </div>
     </div>

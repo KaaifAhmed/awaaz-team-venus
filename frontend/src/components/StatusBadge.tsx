@@ -19,26 +19,26 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       case "P0":
         return (
           <span
-            className={`inline-flex items-center font-semibold rounded-full bg-red-100 text-red-800 border border-red-200 ${padding}`}
+            className={`inline-flex items-center font-semibold rounded-full bg-hazard-p0-light text-hazard-p0 border border-hazard-p0-border ${padding}`}
           >
-            ?? P0 EMERGENCY
+            🚨 P0 EMERGENCY
           </span>
         );
       case "P1":
         return (
           <span
-            className={`inline-flex items-center font-semibold rounded-full bg-amber-100 text-amber-900 border border-amber-200 ${padding}`}
+            className={`inline-flex items-center font-semibold rounded-full bg-hazard-p1-light text-hazard-p1 border border-hazard-p1-border ${padding}`}
           >
-            ?? P1 MAJOR
+            ⚠️ P1 MAJOR
           </span>
         );
       case "P2":
       default:
         return (
           <span
-            className={`inline-flex items-center font-semibold rounded-full bg-slate-100 text-slate-700 border border-slate-200 ${padding}`}
+            className={`inline-flex items-center font-semibold rounded-full bg-hazard-p2-light text-hazard-p2 border border-hazard-p2-border ${padding}`}
           >
-            ?? P2 ROUTINE
+            ℹ️ P2 ROUTINE
           </span>
         );
     }
@@ -49,25 +49,25 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
       case "PENDING":
         return (
           <span
-            className={`inline-flex items-center font-semibold rounded-full bg-amber-100 text-amber-900 border border-amber-300 ${padding}`}
+            className={`inline-flex items-center font-semibold rounded-full bg-hazard-p1-light text-status-pending border border-hazard-p1-border ${padding}`}
           >
-            ? PENDING
+            ⏳ PENDING
           </span>
         );
       case "IN_PROGRESS":
         return (
           <span
-            className={`inline-flex items-center font-semibold rounded-full bg-sky-100 text-sky-900 border border-sky-300 ${padding}`}
+            className={`inline-flex items-center font-semibold rounded-full bg-sky-50 text-status-inProgress border border-sky-200 ${padding}`}
           >
-            ??? IN PROGRESS
+            🔄 IN PROGRESS
           </span>
         );
       case "RESOLVED":
         return (
           <span
-            className={`inline-flex items-center font-semibold rounded-full bg-green-100 text-green-900 border border-green-300 ${padding}`}
+            className={`inline-flex items-center font-semibold rounded-full bg-green-50 text-status-resolved border border-green-200 ${padding}`}
           >
-            ? RESOLVED
+            ✅ RESOLVED
           </span>
         );
     }

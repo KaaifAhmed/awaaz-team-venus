@@ -1,11 +1,60 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Brand / Primary Theme (Institutional Civic Emerald/Indigo) */
+  --color-primary: #312e81;        /* Deep Civic Indigo/Navy */
+  --color-primary-hover: #1e1b4b;  /* Darker Navy */
+  --color-primary-light: #eef2ff;  /* Soft tint */
+  --color-on-primary: #ffffff;
+
+  /* Accent (Civic Action / Highlight) */
+  --color-accent: #4338ca;
+  --color-accent-light: #e0e7ff;
+
+  /* Surfaces & Canvas */
+  --color-bg-app: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f1f5f9;
+  --color-surface-subtle: #f8fafc;
+  --color-border: #e2e8f0;
+  --color-border-strong: #cbd5e1;
+
+  /* Typography / Text Roles */
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+  --color-text-subtle: #94a3b8;
+
+  /* Civic Agency Identity Colors */
+  --color-agency-kwsc: #312e81;
+  --color-agency-kmc: #0284c7;
+  --color-agency-sswmb: #d97706;
+  --color-agency-cantonment: #7e22ce;
+
+  /* Operational Status & Triage */
+  --color-p0-hazard: #dc2626;
+  --color-p0-hazard-light: #fef2f2;
+  --color-p0-hazard-border: #fecaca;
+  --color-p1-major: #d97706;
+  --color-p1-major-light: #fffbeb;
+  --color-p1-major-border: #fde68a;
+  --color-p2-routine: #64748b;
+  --color-p2-routine-light: #f1f5f9;
+  --color-p2-routine-border: #e2e8f0;
+
+  --color-status-pending: #d97706;
+  --color-status-in-progress: #0284c7;
+  --color-status-resolved: #16a34a;
+}
+
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-800 antialiased;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    @apply antialiased text-slate-800;
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--color-bg-app);
     margin: 0;
     padding: 0;
     min-height: 100vh;

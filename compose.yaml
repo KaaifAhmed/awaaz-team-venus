@@ -95,13 +95,6 @@ services:
     depends_on:
       - main-service
 
-  frontend:
-    build: ./frontend
-    ports:
-      - "5173:3000"
-    depends_on:
-      - main-service
-
 volumes:
   pgdata:
   media_data:
