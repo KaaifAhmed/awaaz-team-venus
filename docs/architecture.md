@@ -1,4 +1,4 @@
-# System Architecture — Karachi Civic AI Engine
+# System Architecture — Awaaz
 
 **Project:** CWA Ship Karachi 2026 — Production-Grade AI Product  
 **Status:** Phase 2 Output (Solution Design Finalized)  

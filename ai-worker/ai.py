@@ -1,5 +1,5 @@
 """
-Modular AI Worker intelligence pipeline for Karachi Civic AI Engine.
+Modular AI Worker intelligence pipeline for Awaaz (Karachi Civic AI Platform).
 Orchestrates the civic grievance LangGraph workflow.
 """
 import asyncio
@@ -284,7 +284,7 @@ async def gemini_multimodal_perception_node(state: JobState) -> Dict[str, Any]:
     if GEMINI_API_KEY:
         try:
             system_prompt = (
-                "You are the Karachi Civic AI Perception Model. Analyze the citizen's complaint "
+                "You are the Awaaz Civic AI Perception Model. Analyze the citizen's complaint "
                 "(which may contain text in Urdu, Roman Urdu, or English, alongside photo references).\n\n"
                 "Extract strictly in JSON format:\n"
                 "1. issue_category: Exactly one of ['Sewerage', 'Water Supply', 'Pothole / Road Damage', "

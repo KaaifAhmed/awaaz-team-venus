@@ -4,15 +4,15 @@
 @tailwind utilities;
 
 :root {
-  /* Brand / Primary Theme (Institutional Civic Emerald/Indigo) */
-  --color-primary: #312e81;        /* Deep Civic Indigo/Navy */
-  --color-primary-hover: #1e1b4b;  /* Darker Navy */
-  --color-primary-light: #eef2ff;  /* Soft tint */
+  /* Brand / Primary Theme — Awaaz Warm Violet */
+  --color-primary: #7C3AED;        /* Vibrant Violet — Awaaz Signature */
+  --color-primary-hover: #6D28D9;  /* Deeper Violet */
+  --color-primary-light: #EDE9FE;  /* Soft Violet Tint */
   --color-on-primary: #ffffff;
 
-  /* Accent (Civic Action / Highlight) */
-  --color-accent: #4338ca;
-  --color-accent-light: #e0e7ff;
+  /* Accent (Civic Action / Highlight — Warm Amber) */
+  --color-accent: #F59E0B;
+  --color-accent-light: #FEF3C7;
 
   /* Surfaces & Canvas */
   --color-bg-app: #f8fafc;
@@ -32,7 +32,7 @@
   --color-agency-kwsc: #312e81;
   --color-agency-kmc: #0284c7;
   --color-agency-sswmb: #d97706;
-  --color-agency-cantonment: #7e22ce;
+  --color-agency-cantonment: #be185d;
 
   /* Operational Status & Triage */
   --color-p0-hazard: #dc2626;

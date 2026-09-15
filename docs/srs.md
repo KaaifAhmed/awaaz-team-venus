@@ -1,4 +1,4 @@
-# System Requirements Specification (SRS) — Karachi Civic AI Engine
+# System Requirements Specification (SRS) — Awaaz
 
 **Project:** CWA Ship Karachi 2026 — Production-Grade AI Hackathon  
 **Status:** Phase 1 Output (Discovery & SRS Generation)  
@@ -13,7 +13,7 @@
 When public infrastructure breaks in Karachi (sewage overflows, uncollected solid waste, road craters, potable water pipeline leaks, missing manhole covers), residents face extreme friction submitting and resolving complaints. Responsibilities are fragmented across overlapping authorities (KMC, KW&SC, SSWMB, Cantonment Boards) with no clear routing mechanism or formal drafting support. Simultaneously, municipal departments lack structured, authenticated incoming reports with visual proof and deduplication metrics.
 
 ### 1.2 System Scope
-The Karachi Civic AI Engine is an intake, classification, and routing platform that:
+Awaaz is an intake, classification, and routing platform that:
 - Authenticates citizens via CNIC on initial setup with multi-phone number linking (up to 2 numbers).
 - Ingests multimodal reports (photos, voice notes, free-text) in **English, Urdu, and Roman Urdu** directly via Google Gemini multimodal processing; location is optional (uses GPS coordinates if shared via WhatsApp/web, else extracts landmarks from the user's text/voice description).
 - Classifies defects and applies an extensible two-stage spatial and category routing structure to target the correct municipal agency.

@@ -1,6 +1,6 @@
 # UI Design System & Component Specification
 
-**Project:** CWA Ship Karachi 2026 — Karachi Civic AI Engine  
+**Project:** CWA Ship Karachi 2026 — Awaaz  
 **Component:** Frontend UI System (`frontend/`)  
 **Design Basis:** Material Design 3 (MD3) + Tailwind CSS + Karachi Civic Trust Palette  
 **Governance:** Aligned with [`docs/skills/ui-guidelines/SKILL.md`](file:///c:/Users/kaaif/Documents/Github/team-venus/docs/skills/ui-guidelines/SKILL.md), [`frontend/Team Venus — UI Style Guide.md`](file:///c:/Users/kaaif/Documents/Github/team-venus/frontend/Team%20Venus%20%E2%80%94%20UI%20Style%20Guide.md), and [`docs/ux-specification.md`](file:///c:/Users/kaaif/Documents/Github/team-venus/docs/ux-specification.md)
@@ -190,7 +190,7 @@ Strictly standardized for immediate recognition:
     - Right: Input field *"Landmark / Mashhoor Jagah (e.g. Near Disco Bakery)"*.
 - **Primary CTA:**
   - `w-full h-12 bg-emerald-900 text-white font-semibold text-base rounded-lg shadow-sm hover:bg-emerald-950 mt-6`.
-  - Loading State: Spinner with micro-copy: *"Karachi Civic AI Engine is reading your grievance..."*.
+  - Loading State: Spinner with micro-copy: *"Awaaz is reading your grievance..."*.
 
 ---
 

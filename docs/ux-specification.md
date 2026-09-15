@@ -1,6 +1,6 @@
 # Karachi Civic UX Specification & Journey Architecture
 
-**Project:** CWA Ship Karachi 2026 — Karachi Civic AI Engine  
+**Project:** CWA Ship Karachi 2026 — Awaaz  
 **Component:** Frontend UX Architecture & Interaction Flows  
 **Target Audience:** Citizens of Karachi & Karachi Municipal Officials (KW&SC, KMC, SSWMB, Cantonments)  
 **Governance:** Aligned with [`docs/skills/ux-guidelines/SKILL.md`](file:///c:/Users/kaaif/Documents/Github/team-venus/docs/skills/ux-guidelines/SKILL.md) and [`docs/components/frontend.md`](file:///c:/Users/kaaif/Documents/Github/team-venus/docs/components/frontend.md)
@@ -90,7 +90,7 @@ journey
      - **"📍 Use My Current Location"** button: One-tap browser geolocation.
      - **Landmark Field:** Explicit input: *"Mashhoor Jagah / Landmark (e.g. Near Disco Bakery, NIPA Chowrangi, Matric Board Office)"*.
 - **Single Primary Action:** **`Analyze Grievance with Civic AI`** (Full-width button with civic green fill).
-- **Feedback State:** During upload, transitions button to loading spinner: *"Karachi Civic AI Engine is reading your report..."*
+- **Feedback State:** During upload, transitions button to loading spinner: *"Awaaz is reading your report..."*
 
 ---
 

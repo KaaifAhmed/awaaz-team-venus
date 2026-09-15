@@ -25,7 +25,7 @@ export const useComplaintReview = (): ComplaintReviewState => {
 
   const submitAndPollReview = async (payload: SubmitReportPayload) => {
     setIsSubmitting(true);
-    setAnalysisStatusText("Submitting report to Karachi Civic AI Engine...");
+    setAnalysisStatusText("Submitting report to Awaaz...");
 
     try {
       const { job_id } = await api.submitGrievance(payload);

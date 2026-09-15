@@ -1,7 +1,8 @@
 import React from "react";
 import { useAuth } from "../context/useAuth";
 import { useNavigate } from "react-router-dom";
-import { LogOut, ShieldCheck, Database, Landmark, Building2, Trash2, ShieldAlert } from "lucide-react";
+import { LogOut, Database, Landmark, Building2, Trash2, ShieldAlert, LogIn } from "lucide-react";
+import { BrandLogo, AwaazIcon } from "./BrandLogo";
 
 export const Navbar: React.FC = () => {
   const { user, logout, mockMode, toggleMockMode } = useAuth();
@@ -23,7 +24,7 @@ export const Navbar: React.FC = () => {
       case "CANTONMENT":
         return <ShieldAlert className="w-4 h-4 text-agency-cantonment" />;
       default:
-        return <ShieldCheck className="w-4 h-4 text-primary" />;
+        return <AwaazIcon className="w-4 h-4 text-primary" />;
     }
   };
 
@@ -58,31 +59,10 @@ export const Navbar: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-15 flex items-center justify-between" style={{height: '3.75rem'}}>
         {/* Brand / Logo */}
         <div
-          onClick={() => {
-            if (user) {
-              navigate(user.dashboardRoute);
-            } else {
-              navigate("/login");
-            }
-          }}
+          onClick={() => navigate("/")}
           className="flex items-center gap-3 cursor-pointer select-none"
         >
-          <div className="w-9 h-9 rounded-xl bg-primary text-primary-on flex items-center justify-center shadow-xs">
-            <ShieldCheck className="w-5 h-5 text-primary-on" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-typography-primary text-sm sm:text-base tracking-tight">
-                Karachi Civic AI Engine
-              </span>
-              <span className="hidden sm:inline-block text-[10px] font-bold uppercase px-1.5 py-0.5 bg-primary-light text-primary rounded tracking-wider">
-                CWA 2026
-              </span>
-            </div>
-            <p className="text-[11px] text-typography-muted hidden sm:block leading-tight">
-              Provincial Statutory Redressal &amp; Inter-Agency Coordination
-            </p>
-          </div>
+          <BrandLogo size="sm" showTagline={true} showBadge={true} tagline="Provincial Statutory Redressal &amp; Inter-Agency Coordination" />
         </div>
 
         {/* Right Actions */}
@@ -105,8 +85,26 @@ export const Navbar: React.FC = () => {
             <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${mockMode ? 'bg-primary' : 'bg-status-resolved'}`}></span>
           </button>
 
-          {user && (
+          {!user ? (
+            <button
+              type="button"
+              onClick={() => navigate("/login")}
+              className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-lg bg-primary text-primary-on hover:bg-primary-hover shadow-xs transition-all"
+            >
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </button>
+          ) : (
             <>
+              {/* Dashboard Link */}
+              <button
+                type="button"
+                onClick={() => navigate(user.dashboardRoute)}
+                className="hidden sm:inline-flex items-center gap-1 h-8 px-2.5 text-xs font-semibold rounded-lg bg-surface-hover text-typography-primary border border-surface-border hover:bg-surface-subtle transition-all"
+              >
+                <span>My Portal</span>
+              </button>
+
               {/* Role Badge */}
               <div className="hidden sm:flex items-center gap-2">
                 <span className="text-xs text-typography-muted font-medium">

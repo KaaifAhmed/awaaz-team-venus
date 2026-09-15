@@ -201,8 +201,8 @@ async function runAuditSuite(): Promise<void> {
   const confirmResult = await api.confirmGrievance(reviewA.job_id, reviewA);
   assert(Boolean(confirmResult.tracking_id), "Confirmation returns official tracking ID");
   assert(
-    /^KHI-CIVIC-\d{5}$/.test(confirmResult.tracking_id),
-    `Tracking ID matches format KHI-CIVIC-XXXXX (${confirmResult.tracking_id})`
+    /^AWZ-\d{5}$/.test(confirmResult.tracking_id),
+    `Tracking ID matches format AWZ-XXXXX (${confirmResult.tracking_id})`
   );
   assert(confirmResult.official_status === "PENDING", "Initial official status set to PENDING");
 
@@ -247,7 +247,7 @@ async function runAuditSuite(): Promise<void> {
   const dossierId = "inc-kwsc-90214";
   const dossier = await api.getComplaintDossier(dossierId);
   assert(dossier.master_incident_id === dossierId, "Dossier retrieved by incident ID");
-  assert(dossier.tracking_id === "KHI-CIVIC-90214", "Dossier has statutory tracking ID KHI-CIVIC-90214");
+  assert(dossier.tracking_id === "AWZ-90214", "Dossier has statutory tracking ID AWZ-90214");
   assert(dossier.evidence_photos.length >= 2, "Dossier displays multiple photographic evidence items");
   assert(
     dossier.statutory_citations.includes("Karachi Water and Sewerage Corporation Act 2023") ||

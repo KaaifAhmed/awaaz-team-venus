@@ -48,7 +48,7 @@ class CoreCivicEngineTests(APITestCase):
 
         # Pre-seed a KWSC MasterIncident and a KMC MasterIncident
         self.kwsc_incident = MasterIncident.objects.create(
-            tracking_id="KHI-CIVIC-11111",
+            tracking_id="AWZ-11111",
             target_authority="KWSC",
             issue_category="Sewerage Overflow",
             severity="P0",
@@ -68,7 +68,7 @@ class CoreCivicEngineTests(APITestCase):
         )
 
         self.kmc_incident = MasterIncident.objects.create(
-            tracking_id="KHI-CIVIC-22222",
+            tracking_id="AWZ-22222",
             target_authority="KMC",
             issue_category="Pothole / Road Repair",
             severity="P1",
@@ -150,7 +150,7 @@ class CoreCivicEngineTests(APITestCase):
         res_json = response.json()
         self.assertTrue(res_json["success"])
         tracking_id = res_json["data"]["tracking_id"]
-        self.assertTrue(tracking_id.startswith("KHI-CIVIC-"))
+        self.assertTrue(tracking_id.startswith("AWZ-"))
 
         # Verify DB artifacts
         job.refresh_from_db()

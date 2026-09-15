@@ -1,6 +1,6 @@
 # Component Implementation Specification: AI Worker & LangGraph Intelligence Engine
 
-**Project:** CWA Ship Karachi 2026 — Karachi Civic AI Engine  
+**Project:** CWA Ship Karachi 2026 — Awaaz  
 **Component:** AI Worker Service (`ai-worker/`)  
 **Message Broker:** Redis (`localhost:6379/0`, queue: `ai_queue`)  
 **Main Service Base URL:** `http://main-service:8000` (in Docker) or `http://localhost:8000` (local)  

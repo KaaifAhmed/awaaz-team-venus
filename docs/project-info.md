@@ -1,4 +1,4 @@
-# Project Discovery & Specification: Karachi Civic AI Engine
+# Project Discovery & Specification: Awaaz
 
 **Theme:** Karachi — The City Around You (CWA Ship Karachi 2026)  
 **Target:** 5-Hour Production-Grade AI Hackathon MVP  

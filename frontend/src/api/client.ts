@@ -285,7 +285,7 @@ export const api = {
     if (isMockModeEnabled()) {
       await new Promise((resolve) => setTimeout(resolve, 400));
       const randomNum = Math.floor(10000 + Math.random() * 90000);
-      const trackingId = `KHI-CIVIC-${randomNum}`;
+      const trackingId = `AWZ-${randomNum}`;
 
       const complaints = getStoredComplaints();
       const newCard: ComplaintCard = {
@@ -357,7 +357,7 @@ export const api = {
       const card = all.find((c) => c.master_incident_id === incidentId || c.tracking_id === incidentId);
       return {
         master_incident_id: card?.master_incident_id || incidentId,
-        tracking_id: card?.tracking_id || "KHI-CIVIC-90214",
+        tracking_id: card?.tracking_id || "AWZ-90214",
         target_authority: card?.target_authority || "KWSC",
         statutory_citations:
           "Karachi Water and Sewerage Corporation Act 2023 (Sec. 24); Constitution of Pakistan Arts. 9 & 14.",

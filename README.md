@@ -1,7 +1,7 @@
-﻿# Karachi Civic AI Engine (CWA 2026)
+# Awaaz — Karachi Civic AI Platform (CWA 2026)
 
 ## 1. What It Is
-The Karachi Civic AI Engine is an automated civic grievance intake, spatial routing, and statutory legal dispatch platform designed for the citizens and administrative agencies of Karachi, Pakistan. Citizens report infrastructure hazards—such as overflowing sewage, water leaks, major arterial road damage, and uncollected municipal waste—via WhatsApp or a web portal in Urdu, Roman Urdu, or English. The platform utilizes multimodal vision-language intelligence, two-stage administrative boundary routing (resolving overlaps across KW&SC, KMC, SSWMB, and 6 Cantonment boards), and constitutional statutory enforcement to automatically generate formal legal dossiers and route grievances to the correct municipal authority within seconds.
+Awaaz is an automated civic grievance intake, spatial routing, and statutory legal dispatch platform designed for the citizens and administrative agencies of Karachi, Pakistan. Citizens report infrastructure hazards—such as overflowing sewage, water leaks, major arterial road damage, and uncollected municipal waste—via WhatsApp or a web portal in Urdu, Roman Urdu, or English. The platform utilizes multimodal vision-language intelligence, two-stage administrative boundary routing (resolving overlaps across KW&SC, KMC, SSWMB, and 6 Cantonment boards), and constitutional statutory enforcement to automatically generate formal legal dossiers and route grievances to the correct municipal authority within seconds.
 
 ---
 
@@ -99,7 +99,7 @@ The application comes pre-seeded with 4 demo personas accessible via quick-switc
    - Log in using the **Citizen Demo** button (CNIC: 42101-1234567-1, Password: password123).
    - Enter a grievance in Roman Urdu (e.g., *\"Shahrah-e-Faisal par sewage ka pani jamah hai, traffic ruk raha hai\"*), attach an optional photo, click **Get Current Location**, and press **Submit Civic Grievance**.
    - Review the AI-generated conversational Layman Summary and bilingual Statutory Notice.
-   - Click **Confirm & Dispatch** to generate verified tracking ID KHI-CIVIC-XXXXX.
+   - Click **Confirm & Dispatch** to generate verified tracking ID AWZ-XXXXX.
 
 2. **Official Scoped Triage**:
    - Log out and click **KW&SC Official** (CNIC: 42201-1111111-1, Password: password123).

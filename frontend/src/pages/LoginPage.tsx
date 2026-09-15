@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/useAuth";
 import { useNavigate } from "react-router-dom";
-import { ShieldCheck, Eye, EyeOff, Loader2, ArrowRight, UserCheck, ShieldAlert } from "lucide-react";
+import { Eye, EyeOff, Loader2, ArrowRight, UserCheck, ShieldAlert } from "lucide-react";
+import { BrandLogo, AwaazIcon } from "../components/BrandLogo";
 
 export const LoginPage: React.FC = () => {
   const { login, loading } = useAuth();
@@ -66,14 +67,9 @@ export const LoginPage: React.FC = () => {
         <div className="h-1 bg-primary" />
         <div className="p-6 sm:p-8">
         {/* Crest & Title Header */}
-        <div className="text-center mb-6">
-          <div className="w-14 h-14 bg-primary text-primary-on rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md ring-4 ring-primary-light">
-            <ShieldCheck className="w-8 h-8" />
-          </div>
-          <h1 className="text-2xl font-extrabold text-typography-primary tracking-tight">
-            Karachi Civic AI Engine
-          </h1>
-          <p className="text-xs text-typography-muted mt-1">
+        <div className="text-center mb-6 flex flex-col items-center">
+          <BrandLogo size="lg" showTagline={false} />
+          <p className="text-xs text-typography-muted mt-2">
             Government of Sindh — Inter-Agency Civic Redressal Portal
           </p>
         </div>
@@ -169,7 +165,7 @@ export const LoginPage: React.FC = () => {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Authenticating with Civic AI...</span>
+                <span>Authenticating with Awaaz...</span>
               </>
             ) : (
               <>
@@ -217,7 +213,7 @@ export const LoginPage: React.FC = () => {
                   : "border-surface-border bg-surface-subtle text-typography-secondary hover:bg-surface-hover"
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-agency-kwsc" />
+              <AwaazIcon className="w-3.5 h-3.5 shrink-0 text-agency-kwsc" />
               <div className="truncate">
                 <div className="font-semibold truncate">KW&SC SDO</div>
                 <div className="text-[10px] text-typography-muted font-mono">Engr. Tariq Aziz</div>
@@ -233,7 +229,7 @@ export const LoginPage: React.FC = () => {
                   : "border-surface-border bg-surface-subtle text-typography-secondary hover:bg-surface-hover"
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-agency-kmc" />
+              <AwaazIcon className="w-3.5 h-3.5 shrink-0 text-agency-kmc" />
               <div className="truncate">
                 <div className="font-semibold truncate">KMC Officer</div>
                 <div className="text-[10px] text-typography-muted font-mono">Syed Zafar Abbas</div>
@@ -245,11 +241,11 @@ export const LoginPage: React.FC = () => {
               onClick={() => applyDemoPersona("42000-0000000-0", "official")}
               className={`p-2 text-left rounded-lg border text-xs transition-colors flex items-center gap-2 ${
                 cnic === "42000-0000000-0"
-                  ? "border-agency-cantonment bg-purple-50 text-agency-cantonment"
+                  ? "border-agency-cantonment bg-rose-50 text-agency-cantonment"
                   : "border-surface-border bg-surface-subtle text-typography-secondary hover:bg-surface-hover"
               }`}
             >
-              <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-agency-cantonment" />
+              <AwaazIcon className="w-3.5 h-3.5 shrink-0 text-agency-cantonment" />
               <div className="truncate">
                 <div className="font-semibold truncate">Super Admin</div>
                 <div className="text-[10px] text-typography-muted font-mono">Commissioner HQ</div>

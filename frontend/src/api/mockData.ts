@@ -52,7 +52,7 @@ export const DEMO_USERS: Record<string, AuthResponse> = {
 export const INITIAL_COMPLAINTS: ComplaintCard[] = [
   {
     master_incident_id: "inc-kwsc-90214",
-    tracking_id: "KHI-CIVIC-90214",
+    tracking_id: "AWZ-90214",
     target_authority: "KWSC",
     issue_category: "Sewerage Overflow & Health Hazard",
     severity: "P0",
@@ -72,7 +72,7 @@ export const INITIAL_COMPLAINTS: ComplaintCard[] = [
   },
   {
     master_incident_id: "inc-kmc-90215",
-    tracking_id: "KHI-CIVIC-90215",
+    tracking_id: "AWZ-90215",
     target_authority: "KMC",
     issue_category: "Uncovered Deep Manhole & Arterial Sinkhole",
     severity: "P0",
@@ -91,7 +91,7 @@ export const INITIAL_COMPLAINTS: ComplaintCard[] = [
   },
   {
     master_incident_id: "inc-kwsc-90198",
-    tracking_id: "KHI-CIVIC-90198",
+    tracking_id: "AWZ-90198",
     target_authority: "KWSC",
     issue_category: "Bulk Potable Water Trunk Line Rupture",
     severity: "P0",
@@ -110,7 +110,7 @@ export const INITIAL_COMPLAINTS: ComplaintCard[] = [
   },
   {
     master_incident_id: "inc-sswmb-90218",
-    tracking_id: "KHI-CIVIC-90218",
+    tracking_id: "AWZ-90218",
     target_authority: "SSWMB",
     issue_category: "Stormwater Nullah Solid Waste Choking",
     severity: "P1",
@@ -129,7 +129,7 @@ export const INITIAL_COMPLAINTS: ComplaintCard[] = [
   },
   {
     master_incident_id: "inc-cant-90220",
-    tracking_id: "KHI-CIVIC-90220",
+    tracking_id: "AWZ-90220",
     target_authority: "CANTONMENT",
     issue_category: "Cantonment Drainage Culvert Ponding",
     severity: "P1",
@@ -148,7 +148,7 @@ export const INITIAL_COMPLAINTS: ComplaintCard[] = [
   },
   {
     master_incident_id: "inc-kwsc-90180",
-    tracking_id: "KHI-CIVIC-90180",
+    tracking_id: "AWZ-90180",
     target_authority: "KWSC",
     issue_category: "School Gate Sewer Line Backflow",
     severity: "P1",
@@ -167,7 +167,7 @@ export const INITIAL_COMPLAINTS: ComplaintCard[] = [
   },
   {
     master_incident_id: "inc-kmc-90175",
-    tracking_id: "KHI-CIVIC-90175",
+    tracking_id: "AWZ-90175",
     target_authority: "KMC",
     issue_category: "Industrial Freight Corridor Crater",
     severity: "P1",
@@ -189,7 +189,7 @@ export const INITIAL_COMPLAINTS: ComplaintCard[] = [
 export const MOCK_DOSSIERS: Record<string, ComplaintDossier> = {
   "inc-kwsc-90214": {
     master_incident_id: "inc-kwsc-90214",
-    tracking_id: "KHI-CIVIC-90214",
+    tracking_id: "AWZ-90214",
     target_authority: "KWSC",
     statutory_citations:
       "Karachi Water and Sewerage Corporation Act 2023 (Sec. 24 & Sec. 31); Sindh Environmental Protection Act 2014 (Sec. 11); Constitution of Pakistan Arts. 9 & 14 (Right to Life & Dignity).",
@@ -230,7 +230,7 @@ NOTICE OF STATUTORY DEFAULT UNDER SECTION 24 OF KW&SC ACT 2023:
   },
   "inc-kmc-90215": {
     master_incident_id: "inc-kmc-90215",
-    tracking_id: "KHI-CIVIC-90215",
+    tracking_id: "AWZ-90215",
     target_authority: "KMC",
     statutory_citations:
       "Sindh Local Government Act 2013 (Schedule V, Part-I, Municipal Functions); Motor Vehicles Ordinance 1965 (Highway Safety Standards); Constitution of Pakistan Art. 9.",

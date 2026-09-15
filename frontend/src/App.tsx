@@ -7,6 +7,7 @@ import { LoginPage } from "./pages/LoginPage";
 import { CitizenPortal } from "./pages/CitizenPortal";
 import { OfficialDashboard } from "./pages/OfficialDashboard";
 import { SuperAdminPage } from "./pages/SuperAdminPage";
+import { LandingPage } from "./pages/LandingPage";
 
 // Route Guard for Authenticated Users
 const ProtectedRoute: React.FC<{
@@ -26,15 +27,6 @@ const ProtectedRoute: React.FC<{
   return <>{children}</>;
 };
 
-// Root index redirector
-const RootRedirect: React.FC = () => {
-  const { user, isAuthenticated } = useAuth();
-  if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
-  }
-  return <Navigate to={user.dashboardRoute || "/citizen/portal"} replace />;
-};
-
 export function App() {
   return (
     <AuthProvider>
@@ -43,8 +35,8 @@ export function App() {
           <Navbar />
           <main className="flex-1">
             <Routes>
-              {/* Root redirect */}
-              <Route path="/" element={<RootRedirect />} />
+              {/* Technical Landing Page */}
+              <Route path="/" element={<LandingPage />} />
 
               {/* Login Page */}
               <Route path="/login" element={<LoginPage />} />
@@ -80,7 +72,7 @@ export function App() {
               />
 
               {/* Catch-all */}
-              <Route path="*" element={<RootRedirect />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </main>
         </div>

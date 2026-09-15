@@ -1,6 +1,6 @@
 # Component Implementation Specification: Main Django Service & WhatsApp Gateway
 
-**Project:** CWA Ship Karachi 2026 — Karachi Civic AI Engine  
+**Project:** CWA Ship Karachi 2026 — Awaaz  
 **Component:** Main Service (`main-service`) & WhatsApp Gateway (`whatsapp-service`)  
 **Target Ports:** Main Service (`http://localhost:8000`), WhatsApp Gateway (`http://localhost:3000`)  
 **Database:** PostgreSQL with `pgvector` (`localhost:5432`)  

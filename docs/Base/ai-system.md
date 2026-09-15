@@ -1,4 +1,4 @@
-# AI System — Karachi Civic AI Engine
+# AI System — Awaaz
 
 **Project:** CWA Ship Karachi 2026 — Production-Grade AI Product  
 **Status:** Finalized System Specification  

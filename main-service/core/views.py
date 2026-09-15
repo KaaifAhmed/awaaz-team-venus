@@ -196,7 +196,7 @@ class ReportConfirmView(APIView):
 
         # Generate unique tracking ID
         while True:
-            candidate_id = f"KHI-CIVIC-{random.randint(10000, 99999)}"
+            candidate_id = f"AWZ-{random.randint(10000, 99999)}"
             if not MasterIncident.objects.filter(tracking_id=candidate_id).exists():
                 tracking_id = candidate_id
                 break

@@ -100,7 +100,7 @@ class BackendSRSAuditTestSuite(APITestCase):
 
         # Seed test MasterIncidents for RBAC and deduplication testing
         self.kwsc_incident = MasterIncident.objects.create(
-            tracking_id="KHI-CIVIC-10001",
+            tracking_id="AWZ-10001",
             target_authority="KWSC",
             issue_category="Sewerage Overflow",
             severity="P0",
@@ -120,7 +120,7 @@ class BackendSRSAuditTestSuite(APITestCase):
         )
 
         self.kmc_incident = MasterIncident.objects.create(
-            tracking_id="KHI-CIVIC-20002",
+            tracking_id="AWZ-20002",
             target_authority="KMC",
             issue_category="Major Road / Pothole",
             severity="P1",
@@ -140,7 +140,7 @@ class BackendSRSAuditTestSuite(APITestCase):
         )
 
         self.sswmb_incident = MasterIncident.objects.create(
-            tracking_id="KHI-CIVIC-30003",
+            tracking_id="AWZ-30003",
             target_authority="SSWMB",
             issue_category="Solid Waste",
             severity="P2",
@@ -152,7 +152,7 @@ class BackendSRSAuditTestSuite(APITestCase):
         )
 
         self.cb_incident = MasterIncident.objects.create(
-            tracking_id="KHI-CIVIC-40004",
+            tracking_id="AWZ-40004",
             target_authority="CANTONMENT",
             issue_category="Drainage",
             severity="P1",
@@ -425,7 +425,7 @@ class BackendSRSAuditTestSuite(APITestCase):
     # =========================================================================
 
     def test_fr10_fr11_confirm_report_creates_master_incident_and_dossier(self):
-        """FR-10 & FR-11: Citizen confirmation synthesizes KHI-CIVIC-XXXXX and creates ComplaintDossier."""
+        """FR-10 & FR-11: Citizen confirmation synthesizes AWZ-XXXXX and creates ComplaintDossier."""
         job = JobBuffer.objects.create(
             job_id="job_audit_confirm_01",
             user=self.citizen,
@@ -451,9 +451,9 @@ class BackendSRSAuditTestSuite(APITestCase):
         self.assertTrue(body["success"])
         data = body["data"]
 
-        # 1. Assert tracking_id conforms to KHI-CIVIC-XXXXX format
+        # 1. Assert tracking_id conforms to AWZ-XXXXX format
         tracking_id = data["tracking_id"]
-        self.assertRegex(tracking_id, r"^KHI-CIVIC-\d{5}$")
+        self.assertRegex(tracking_id, r"^AWZ-\d{5}$")
         self.assertEqual(data["target_authority"], "KWSC")
         self.assertEqual(data["official_status"], "PENDING")
 

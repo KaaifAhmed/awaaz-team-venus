@@ -1,5 +1,5 @@
 """
-Spatial Boundaries GeoJSON for Karachi Civic AI Engine:
+Spatial Boundaries GeoJSON for Awaaz (Karachi Civic AI Platform):
 6 Cantonment Polygons + 26 KMC Major Arterial Corridors.
 """
 

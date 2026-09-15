@@ -1,6 +1,6 @@
 # Component Implementation Specification: React Frontend Single Page Application
 
-**Project:** CWA Ship Karachi 2026 — Karachi Civic AI Engine  
+**Project:** CWA Ship Karachi 2026 — Awaaz  
 **Component:** Frontend (`frontend/`)  
 **Target Port:** `http://localhost:5173` (Vite Dev Server)  
 **Framework:** React 19 + TypeScript + Vite + Tailwind CSS  
@@ -117,7 +117,7 @@ The API client must unwrap `response.data.data` on `success: true` or throw an e
 ## 4. Complete Screen Specifications
 
 ### 4.1 Authentication Page (`/login`)
-- **Visual Design:** Centered clean card with Karachi Civic AI Engine crest/badge.
+- **Visual Design:** Centered clean card with Awaaz crest/badge.
 - **Tabs:**
   - **Citizen Login:** CNIC field with auto-formatting (`42XXX-XXXXXXX-X`) or phone number, password, and link to Register.
   - **Official Login:** Government ID / CNIC, Password, and department selector hint.
