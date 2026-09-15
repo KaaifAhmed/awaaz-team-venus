@@ -53,7 +53,7 @@ export const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="bg-surface/95 backdrop-blur-xs border-b border-surface-border sticky top-0 z-40 shadow-xs">
+    <header className="bg-surface border-b border-surface-border sticky top-0 z-40 shadow-xs">
       {/* Accent strip */}
       <div className="h-0.5 bg-primary" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-15 flex items-center justify-between" style={{height: '3.75rem'}}>
