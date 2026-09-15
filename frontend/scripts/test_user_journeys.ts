@@ -144,10 +144,25 @@ async function runAuditSuite(): Promise<void> {
   assert(superAuth.role === "SUPER_ADMIN", "Super Admin authenticates with role SUPER_ADMIN");
   assert(superAuth.dashboard_route === "/admin/super", "Super Admin routed to /admin/super");
 
-  // Unregistered / Custom Citizen CNIC Fallback
-  const customAuth = await api.login("42101-9999999-9", "pass");
-  assert(customAuth.role === "CITIZEN", "Unregistered CNIC dynamically receives CITIZEN role");
-  assert(customAuth.dashboard_route === "/citizen/portal", "Unregistered CNIC routed to /citizen/portal");
+  // Unregistered CNIC dynamically receives CITIZEN role
+  const dynamicAuth = await api.login("42301-9999999-9", "custompassword");
+  assert(dynamicAuth.role === "CITIZEN", "Unregistered CNIC dynamically receives CITIZEN role");
+  assert(dynamicAuth.dashboard_route === "/citizen/portal", "Unregistered CNIC routed to /citizen/portal");
+
+  // New Citizen Registration (FR-01 / contracts in design.md)
+  const newCitizenReg = await api.register({
+    cnic: "42101-9876543-2",
+    full_name: "Ayesha Khan",
+    primary_phone: "+923009876543",
+    password: "securepassword123",
+  });
+  assert(newCitizenReg.role === "CITIZEN", "Registered user receives role CITIZEN");
+  assert(newCitizenReg.full_name === "Ayesha Khan", "Registered user full_name matches");
+  assert(newCitizenReg.cnic === "42101-9876543-2", "Registered user CNIC matches");
+  assert(newCitizenReg.dashboard_route === "/citizen/portal", "Registered user routed to /citizen/portal");
+  assert(Boolean(newCitizenReg.token), "Registered user receives auth token");
+  const storedRegUser = api.getCurrentUser();
+  assert(storedRegUser?.fullName === "Ayesha Khan", "Registered citizen profile persisted in storage");
 
   // SECTION 3: US-01 & US-02 CITIZEN INTAKE, AI PERCEPTION & REVIEW
   printSection("3. US-01 & US-02: Citizen Multimodal Intake, AI Review & Success Flow");

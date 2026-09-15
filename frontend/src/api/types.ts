@@ -13,6 +13,13 @@ export interface CurrentUser {
   primaryPhone?: string;
 }
 
+export interface RegisterPayload {
+  cnic: string;
+  full_name: string;
+  primary_phone: string;
+  password: string;
+}
+
 export interface AuthResponse {
   user_id: string;
   cnic: string;

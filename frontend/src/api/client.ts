@@ -9,6 +9,7 @@ import type {
   ComplaintDossier,
   CurrentUser,
   OfficialStatus,
+  RegisterPayload,
   ReviewPackage,
   SubmitReportPayload,
   SuperAdminOverview,
@@ -162,6 +163,49 @@ export const api = {
       cnic,
       password,
     });
+    const currentUser: CurrentUser = {
+      userId: resp.user_id,
+      cnic: resp.cnic,
+      fullName: resp.full_name,
+      role: resp.role,
+      assignedOrg: resp.assigned_org,
+      dashboardRoute: resp.dashboard_route,
+      primaryPhone: resp.primary_phone,
+    };
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(currentUser));
+    return resp;
+  },
+
+  register: async (payload: RegisterPayload): Promise<AuthResponse> => {
+    if (isMockModeEnabled()) {
+      await new Promise((r) => setTimeout(r, 600));
+      const registeredUser: AuthResponse = {
+        user_id: `usr-citizen-${Date.now()}`,
+        cnic: payload.cnic,
+        full_name: payload.full_name,
+        primary_phone: payload.primary_phone,
+        role: "CITIZEN",
+        assigned_org: null,
+        dashboard_route: "/citizen/portal",
+        token: `mock-jwt-reg-${Date.now()}`,
+      };
+      localStorage.setItem(AUTH_TOKEN_KEY, registeredUser.token);
+      localStorage.setItem(
+        CURRENT_USER_KEY,
+        JSON.stringify({
+          userId: registeredUser.user_id,
+          cnic: registeredUser.cnic,
+          fullName: registeredUser.full_name,
+          role: registeredUser.role,
+          assignedOrg: registeredUser.assigned_org,
+          dashboardRoute: registeredUser.dashboard_route,
+          primaryPhone: registeredUser.primary_phone,
+        })
+      );
+      return registeredUser;
+    }
+
+    const resp = await axiosInstance.post<any, AuthResponse>("/auth/register", payload);
     localStorage.setItem(AUTH_TOKEN_KEY, resp.token);
     const currentUser: CurrentUser = {
       userId: resp.user_id,

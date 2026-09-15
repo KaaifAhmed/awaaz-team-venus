@@ -1,5 +1,5 @@
 import { createContext } from "react";
-import type { AuthResponse, CurrentUser } from "../api/types";
+import type { AuthResponse, CurrentUser, RegisterPayload } from "../api/types";
 
 export interface AuthContextType {
   user: CurrentUser | null;
@@ -7,6 +7,7 @@ export interface AuthContextType {
   mockMode: boolean;
   toggleMockMode: () => void;
   login: (cnic: string, password?: string) => Promise<AuthResponse>;
+  register: (payload: RegisterPayload) => Promise<AuthResponse>;
   logout: () => void;
   loading: boolean;
 }

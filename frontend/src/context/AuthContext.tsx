@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import type { AuthResponse, CurrentUser } from "../api/types";
+import type { AuthResponse, CurrentUser, RegisterPayload } from "../api/types";
 import { api, isMockModeEnabled, setMockMode } from "../api/client";
 import { AuthContext } from "./auth-context-def";
 
@@ -36,6 +36,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
+  const register = async (payload: RegisterPayload): Promise<AuthResponse> => {
+    setLoading(true);
+    try {
+      const response = await api.register(payload);
+      const currentUser: CurrentUser = {
+        userId: response.user_id,
+        cnic: response.cnic,
+        fullName: response.full_name,
+        role: response.role,
+        assignedOrg: response.assigned_org,
+        dashboardRoute: response.dashboard_route,
+        primaryPhone: response.primary_phone,
+      };
+      setUser(currentUser);
+      return response;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const logout = () => {
     api.logout();
     setUser(null);
@@ -49,6 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         mockMode,
         toggleMockMode,
         login,
+        register,
         logout,
         loading,
       }}

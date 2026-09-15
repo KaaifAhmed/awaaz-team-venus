@@ -4,6 +4,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/useAuth";
 import { Navbar } from "./components/Navbar";
 import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
 import { CitizenPortal } from "./pages/CitizenPortal";
 import { OfficialDashboard } from "./pages/OfficialDashboard";
 import { SuperAdminPage } from "./pages/SuperAdminPage";
@@ -40,6 +41,9 @@ export function App() {
 
               {/* Login Page */}
               <Route path="/login" element={<LoginPage />} />
+
+              {/* Citizen Registration Page */}
+              <Route path="/register" element={<RegisterPage />} />
 
               {/* Citizen Portal */}
               <Route
