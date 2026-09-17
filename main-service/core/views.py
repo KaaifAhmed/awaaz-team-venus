@@ -882,10 +882,13 @@ class WhatsAppInboundView(APIView):
             elif not has_location:
                 send_whatsapp_message(phone, "Please apni location bhejein (current location share karein, ya area ka naam likhein, jese Gulshan Iqbal).")
 
-        elif session.status == "AWAITING_CONFIRM_REPORT":
-            if control == "GENERATE":
-                send_whatsapp_message(phone, "Aapki report banayi ja rahi hai, thoda intezar karein...")
-                enqueue_conversation_job("generate_report", session.id)
+            elif session.status == "AWAITING_CONFIRM_REPORT":
+                if control == "GENERATE":
+                    send_whatsapp_message(phone, "Aapki report banayi ja rahi hai, thoda intezar karein...")
+                    fallback_landmark = session.landmark_text or (
+                        f"GPS coordinates {session.lat}, {session.lng}" if session.lat else "Karachi"
+                    )
+                    enqueue_conversation_job("generate_report", session.id, fallback_landmark=fallback_landmark)
             elif control in ("PROBLEM", "LOCATION"):
                 pass
             else:
@@ -1011,11 +1014,11 @@ class ConversationAttachmentAnalyzedView(APIView):
         attachment.analyzed = True
         attachment.save()
 
+        FAILED_ANALYSIS_TEXT = "Photo received (could not be analyzed automatically)."
+
         with transaction.atomic():
-            # select_for_update locks this session row so a second, concurrent
-            # image-analysis callback has to WAIT here until we're done deciding.
             session = ConversationSession.objects.select_for_update().get(id=session_id)
-            if extracted_info:
+            if extracted_info and extracted_info.strip() != FAILED_ANALYSIS_TEXT:
                 session.collected_texts.append(f"[Photo shows]: {extracted_info}")
                 session.save()
             WhatsAppInboundView()._advance_conversation(session, control="OTHER", phone=session.phone, has_new_image=False)

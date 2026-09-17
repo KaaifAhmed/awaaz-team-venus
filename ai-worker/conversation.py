@@ -54,6 +54,7 @@ class ConvState(TypedDict, total=False):
 
     has_image: Optional[bool]
     reply: Optional[str]
+    fallback_landmark: Optional[str]    
 
 
 # ============================================================================
@@ -72,6 +73,7 @@ async def analyze_image_node(state: ConvState) -> Dict[str, Any]:
         try:
             async with httpx.AsyncClient(timeout=6.0) as img_client:
                 img_resp = await img_client.get(resolved_url)
+                logger.info(f"[VISION] Fetched image from {resolved_url} -> status {img_resp.status_code}")
                 if img_resp.status_code == 200:
                     img_b64 = base64.b64encode(img_resp.content).decode("utf-8")
                     mime = "image/png" if ".png" in resolved_url.lower() else "image/jpeg"
@@ -117,7 +119,7 @@ async def fetch_session_node(state: ConvState) -> Dict[str, Any]:
                 "collected_texts": data.get("collected_texts", []),
                 "lat": data.get("lat"),
                 "lng": data.get("lng"),
-                "landmark_text": data.get("landmark_text"),
+                "landmark_text": data.get("landmark_text") or state.get("fallback_landmark"),
             }
     return {}
 
