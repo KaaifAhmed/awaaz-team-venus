@@ -39,6 +39,17 @@ redis_client = redis.from_url(
     decode_responses=True,
 )
 
+GREETING_WORDS = {
+    "hello", "hi", "hey", "salam", "assalamualaikum", "asalam", "aoa",
+    "salaam", "hy", "helo", "start", "test"
+}
+
+
+def is_just_a_greeting(text):
+    lowered = (text or "").strip().lower()
+    words = lowered.split()
+    return len(words) <= 2 and all(w.strip("!.,?") in GREETING_WORDS for w in words)
+
 def enqueue_conversation_job(job_type, session_id, **extra):
     """Push a small task for the AI worker's conversation graph to pick up."""
     try:
@@ -852,7 +863,7 @@ class WhatsAppInboundView(APIView):
                 discard_session(session)
             session = ConversationSession.objects.create(phone=phone, user=user, status="COLLECTING")
             if control == "RESTART":
-                send_whatsapp_message(phone, "Sure, let's start a new report. Please describe the problem, and/or send a photo.")
+                send_whatsapp_message(phone, "Theek hai, nayi report shuru karte hain. Please masla batayein, ya photo bhej dein.")
                 return Response(envelope(data={"session_id": str(session.id)}), status=status.HTTP_200_OK)
 
         # ---- Step 3: save whatever the user sent into the session ----
@@ -866,7 +877,9 @@ class WhatsAppInboundView(APIView):
             session.lng = lng
 
         if text and control is None:
-            if looks_like_a_short_location(text, session):
+            if is_just_a_greeting(text):
+                pass
+            elif looks_like_a_short_location(text, session):
                 session.landmark_text = text
             else:
                 session.collected_texts.append(text)
@@ -884,45 +897,42 @@ class WhatsAppInboundView(APIView):
 
         if session.status == "COLLECTING":
             if has_new_image and not (has_problem and has_location):
-                send_whatsapp_message(phone, "Got your photo! I'll take a look at it.")
+                send_whatsapp_message(phone, "Aapki photo mil gayi hai! Main dekh raha hoon.")
 
             if has_problem and has_location:
-                # CHANGED: only send the "ready" prompt once per session
                 if not session.ready_prompt_sent:
                     session.status = "AWAITING_CONFIRM_REPORT"
                     session.ready_prompt_sent = True
                     session.save()
                     send_whatsapp_message(
                         phone,
-                        "I have the problem details and location. Reply 'generate' if you want me to prepare the "
-                        "complaint report now, or keep sending more details/photos first.",
+                        "Mujhe masla aur location dono mil gaye hain. Agar report banwani hai to 'generate' likh dein, "
+                        "ya phir aur tafseel/photos bhejte rahein.",
                     )
             elif has_problem and not has_location:
-                send_whatsapp_message(phone, "Got it. Now please share your location (send current location, or just type your area, e.g. Gulshan Iqbal).")
+                send_whatsapp_message(phone, "Theek hai. Ab please apni location bhejein (current location share karein, ya area ka naam likhein, jese Gulshan Iqbal).")
             elif has_location and not has_problem:
-                send_whatsapp_message(phone, "Thanks for the location. Now please describe the problem, or send a photo.")
+                send_whatsapp_message(phone, "Location mil gayi, shukriya. Ab please masla bataen, ya uski photo bhej dein.")
             else:
-                send_whatsapp_message(phone, "Please describe the civic problem you'd like to report, or send a photo.")
+                send_whatsapp_message(phone, "Please apna civic masla bataen (ya uski photo bhej dein).")
 
         elif session.status == "AWAITING_CONFIRM_REPORT":
             if control == "POSITIVE":
-                send_whatsapp_message(phone, "Generating your report, please wait a moment...")
+                send_whatsapp_message(phone, "Aapki report banayi ja rahi hai, thoda intezar karein...")
                 enqueue_conversation_job("generate_report", session.id)
             else:
-                send_whatsapp_message(phone, "No problem — tell me more or send more photos. Reply 'generate' whenever you're ready.")
+                send_whatsapp_message(phone, "Theek hai, aur bata dein ya photo bhej dein. Jab tayyar hon to 'generate' likh dein.")
 
         elif session.status == "AWAITING_SUBMIT":
             if control == "POSITIVE":
                 self._submit_session(session, phone)
             elif control == "NEGATIVE":
-                send_whatsapp_message(phone, "Okay, I won't submit yet. Tell me what to add or change.")
+                send_whatsapp_message(phone, "Theek hai, abhi submit nahi karta. Bata dein kya add ya change karna hai.")
             else:
-                # user sent extra info while a report was already generated -> go collect more
-                # CHANGED: reset ready_prompt_sent so the "ready" prompt can fire again later
                 session.status = "COLLECTING"
                 session.ready_prompt_sent = False
                 session.save()
-                send_whatsapp_message(phone, "Got it, noted. Reply 'generate' again when you're ready to remake the report.")
+                send_whatsapp_message(phone, "Noted, shukriya. Jab report dobara banwani ho to 'generate' likh dein.")
 
     def _submit_session(self, session, phone):
         report = session.generated_report or {}
@@ -966,10 +976,9 @@ class WhatsAppInboundView(APIView):
 
         send_whatsapp_message(
             phone,
-            f"✅ Your complaint has been submitted!\nTracking ID: {tracking_id}\n"
-            f"Department: {target_authority}\nYou can send a new report anytime.",
+            f"✅ Aapki shikayat submit ho gayi hai!\nTracking ID: {tracking_id}\n"
+            f"Department: {target_authority}\nAap kabhi bhi nayi report bhej sakte hain.",
         )
-
 
 # ============================================================================
 # 5. Internal Conversation APIs (used by the AI worker)
@@ -1043,6 +1052,5 @@ class ConversationReportGeneratedView(APIView):
         session.save()
 
         summary = report.get("layman_summary", "Your report is ready.")
-        send_whatsapp_message(session.phone, f"{summary}\n\nReply YES to submit this complaint, or NO if you'd like to change something.")
-
+        send_whatsapp_message(session.phone, f"{summary}\n\nAgar submit karna hai to YES likhein, ya kuch change karna hai to NO.")
         return Response(envelope(data={"received": True}), status=status.HTTP_200_OK)
