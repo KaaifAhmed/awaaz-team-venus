@@ -124,6 +124,7 @@ class WhatsAppService {
       const imageMsg = unpacked.imageMessage || message.imageMessage;
       const audioMsg = unpacked.audioMessage || message.audioMessage || unpacked.voiceMessage;
       const videoMsg = unpacked.videoMessage || message.videoMessage;
+      const locationMsg = unpacked.locationMessage || message.locationMessage;
 
       const text =
         unpacked.conversation ||
@@ -174,6 +175,9 @@ class WhatsAppService {
         senderName: msg.pushName || null,
         text,
         media_base64: mediaBase64,
+        location: locationMsg
+          ? { lat: locationMsg.degreesLatitude, lng: locationMsg.degreesLongitude }
+          : null,
         media_type: mediaType,
         messageId: msg.key.id,
         timestamp: Number(msg.messageTimestamp),

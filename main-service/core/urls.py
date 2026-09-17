@@ -16,6 +16,9 @@ from .views import (
     SuperAdminOverviewView,
     WhatsAppInboundView,
     WorkerCallbackView,
+    ConversationSessionDetailView,          # add
+    ConversationAttachmentAnalyzedView,      # add
+    ConversationReportGeneratedView,
 )
 
 urlpatterns = [
@@ -42,4 +45,8 @@ urlpatterns = [
 
     # WhatsApp Webhook
     path("whatsapp/inbound", WhatsAppInboundView.as_view(), name="whatsapp_inbound"),
+    
+    path("internal/conversation/<uuid:session_id>", ConversationSessionDetailView.as_view(), name="conversation_detail"),
+    path("internal/conversation/<uuid:session_id>/attachment/<uuid:attachment_id>/analyzed", ConversationAttachmentAnalyzedView.as_view(), name="conversation_attachment_analyzed"),
+    path("internal/conversation/<uuid:session_id>/report-generated", ConversationReportGeneratedView.as_view(), name="conversation_report_generated"),
 ]

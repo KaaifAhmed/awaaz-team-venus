@@ -24,6 +24,13 @@ from .serializers import (
 )
 from .spatial_data import SPATIAL_BOUNDARIES
 
+import logging
+import requests
+
+from .models import ConversationSession, SessionAttachment  # add to existing "from .models import ..." line
+
+logger = logging.getLogger(__name__)
+
 User = get_user_model()
 
 # Redis client initialization
@@ -32,6 +39,69 @@ redis_client = redis.from_url(
     decode_responses=True,
 )
 
+def enqueue_conversation_job(job_type, session_id, **extra):
+    """Push a small task for the AI worker's conversation graph to pick up."""
+    try:
+        payload = {"job_type": job_type, "session_id": str(session_id), **extra}
+        redis_client.rpush("conversation_queue", json.dumps(payload))
+    except Exception:
+        pass
+
+
+def send_whatsapp_message(phone, message):
+    """Ask the WhatsApp gateway (whatsapp.ts) to send a text message to the user."""
+    try:
+        requests.post(
+            f"{settings.WHATSAPP_SERVICE_URL}/whatsapp/send",
+            json={"to": phone, "message": message},
+            timeout=5,
+        )
+    except Exception as exc:
+        logger.warning(f"[WHATSAPP] Failed to send message to {phone}: {exc}")
+
+
+def get_active_session(phone):
+    return ConversationSession.objects.filter(phone=phone, is_active=True).first()
+
+
+def discard_session(session):
+    session.status = "DISCARDED"
+    session.is_active = False
+    session.discarded_at = timezone.now()
+    session.save()
+
+
+# --- Very small, easy to read "does this message mean yes/no/restart?" checker ---
+RESTART_PHRASES = ["new report", "new complaint", "naya report", "naya complaint", "start over", "start new"]
+POSITIVE_WORDS = {"yes", "yeah", "yep", "haan", "ji", "ok", "okay", "confirm", "submit", "generate", "proceed", "ready", "done"}
+NEGATIVE_WORDS = {"no", "nahi", "nope", "cancel", "wait", "more"}
+
+
+def classify_control_word(text):
+    """Returns 'RESTART', 'POSITIVE', 'NEGATIVE' or None (meaning: normal content)."""
+    lowered = (text or "").strip().lower()
+    if not lowered:
+        return None
+    for phrase in RESTART_PHRASES:
+        if phrase in lowered:
+            return "RESTART"
+    # Only treat SHORT messages as a yes/no control word, so a long complaint
+    # sentence containing the word "no" somewhere isn't misread as a control word.
+    if len(lowered.split()) <= 3:
+        if lowered in POSITIVE_WORDS:
+            return "POSITIVE"
+        if lowered in NEGATIVE_WORDS:
+            return "NEGATIVE"
+    return None
+
+
+def looks_like_a_short_location(text, session):
+    """Heuristic: if we already have a problem description but no location yet,
+    and this new message is short (<=6 words), treat it as the location."""
+    word_count = len((text or "").split())
+    already_has_problem = len(session.collected_texts) > 0 or session.attachments.exists()
+    missing_location = session.lat is None and not session.landmark_text
+    return already_has_problem and missing_location and 0 < word_count <= 6
 
 def envelope(data=None, error=None):
     return {
@@ -715,7 +785,6 @@ class SuperAdminOverviewView(APIView):
 # ============================================================================
 # 4. WhatsApp Inbound Webhook
 # ============================================================================
-
 class WhatsAppInboundView(APIView):
     permission_classes = [AllowAny]
     serializer_class = WhatsAppInboundRequestSerializer
@@ -742,46 +811,28 @@ class WhatsAppInboundView(APIView):
             lat = None
             lng = None
 
-        # Process media attachment (image / audio) if present
+        # ---- Decode any attached photo ----
         media_base64 = data.get("media_base64") or data.get("image_base64")
         media_type = data.get("media_type") or ""
         image_content_file = None
-        audio_content_file = None
 
-        if media_base64:
+        if media_base64 and "audio" not in media_type:
             import base64
             from django.core.files.base import ContentFile
             try:
                 decoded_bytes = base64.b64decode(media_base64)
-                if "audio" in media_type:
-                    ext = "ogg" if "ogg" in media_type else "mp3"
-                    audio_content_file = ContentFile(decoded_bytes, name=f"wa_{phone}_{uuid.uuid4().hex[:8]}.{ext}")
-                else:
-                    ext = "png" if "png" in media_type else "jpg"
-                    image_content_file = ContentFile(decoded_bytes, name=f"wa_{phone}_{uuid.uuid4().hex[:8]}.{ext}")
+                ext = "png" if "png" in media_type else "jpg"
+                image_content_file = ContentFile(decoded_bytes, name=f"wa_{phone}_{uuid.uuid4().hex[:8]}.{ext}")
             except Exception as b64_err:
-                logger.warning(f"[WHATSAPP-INBOUND] Failed to decode media attachment: {b64_err}")
+                logger.warning(f"[WHATSAPP-INBOUND] Failed to decode image attachment: {b64_err}")
 
-        # If user only submitted a photo/audio with no caption text, provide factual description
-        if not text:
-            if image_content_file:
-                text = "Citizen photographic civic grievance submitted via WhatsApp."
-            elif audio_content_file:
-                text = "Citizen voice recording civic grievance submitted via WhatsApp."
-            else:
-                text = "Citizen civic report submitted via WhatsApp."
-
-        # Look up or create citizen stub
-        user = (
-            User.objects.filter(primary_phone=phone).first()
-            or User.objects.filter(username=phone).first()
-        )
+        # ---- Find/create the citizen user (same as before) ----
+        user = User.objects.filter(primary_phone=phone).first() or User.objects.filter(username=phone).first()
         if not user:
             from users.models import LinkedPhone
             linked = LinkedPhone.objects.filter(phone_number=phone).first()
             if linked:
                 user = linked.user
-
         if not user:
             user = User.objects.create(
                 username=phone,
@@ -790,26 +841,208 @@ class WhatsAppInboundView(APIView):
                 role="CITIZEN",
             )
 
-        job_id = f"job_{uuid.uuid4().hex[:12]}"
-        job = JobBuffer.objects.create(
-            job_id=job_id,
-            user=user,
-            source="whatsapp",
-            raw_text=text,
-            lat=lat,
-            lng=lng,
-            status="QUEUED",
-        )
-        if image_content_file:
-            job.image_file = image_content_file
-            job.save(update_fields=["image_file"])
-        if audio_content_file:
-            job.audio_file = audio_content_file
-            job.save(update_fields=["audio_file"])
+        # ---- Step 1: figure out what the user MEANT with this message ----
+        control = classify_control_word(text)
 
-        enqueue_ai_job(job_id)
+        # ---- Step 2: get (or start) the active conversation session ----
+        session = get_active_session(phone)
+
+        if control == "RESTART" or session is None:
+            if session is not None:
+                discard_session(session)
+            session = ConversationSession.objects.create(phone=phone, user=user, status="COLLECTING")
+            if control == "RESTART":
+                send_whatsapp_message(phone, "Sure, let's start a new report. Please describe the problem, and/or send a photo.")
+                return Response(envelope(data={"session_id": str(session.id)}), status=status.HTTP_200_OK)
+
+        # ---- Step 3: save whatever the user sent into the session ----
+        if image_content_file:
+            attachment = SessionAttachment.objects.create(session=session, image_file=image_content_file)
+            image_url = request.build_absolute_uri(attachment.image_file.url)
+            enqueue_conversation_job("analyze_image", session.id, attachment_id=str(attachment.id), image_url=image_url)
+
+        if lat is not None and lng is not None:
+            session.lat = lat
+            session.lng = lng
+
+        if text and control is None:
+            if looks_like_a_short_location(text, session):
+                session.landmark_text = text
+            else:
+                session.collected_texts.append(text)
+
+        session.save()
+
+        # ---- Step 4: run the simple state machine and decide what to say back ----
+        self._advance_conversation(session, control, phone, has_new_image=bool(image_content_file))
+
+        return Response(envelope(data={"session_id": str(session.id)}), status=status.HTTP_200_OK)
+
+    def _advance_conversation(self, session, control, phone, has_new_image):
+        has_problem = len(session.collected_texts) > 0 or session.attachments.exists()
+        has_location = session.lat is not None or bool(session.landmark_text)
+
+        if session.status == "COLLECTING":
+            if has_new_image and not (has_problem and has_location):
+                send_whatsapp_message(phone, "Got your photo! I'll take a look at it.")
+
+            if has_problem and has_location:
+                # CHANGED: only send the "ready" prompt once per session
+                if not session.ready_prompt_sent:
+                    session.status = "AWAITING_CONFIRM_REPORT"
+                    session.ready_prompt_sent = True
+                    session.save()
+                    send_whatsapp_message(
+                        phone,
+                        "I have the problem details and location. Reply 'generate' if you want me to prepare the "
+                        "complaint report now, or keep sending more details/photos first.",
+                    )
+            elif has_problem and not has_location:
+                send_whatsapp_message(phone, "Got it. Now please share your location (send current location, or just type your area, e.g. Gulshan Iqbal).")
+            elif has_location and not has_problem:
+                send_whatsapp_message(phone, "Thanks for the location. Now please describe the problem, or send a photo.")
+            else:
+                send_whatsapp_message(phone, "Please describe the civic problem you'd like to report, or send a photo.")
+
+        elif session.status == "AWAITING_CONFIRM_REPORT":
+            if control == "POSITIVE":
+                send_whatsapp_message(phone, "Generating your report, please wait a moment...")
+                enqueue_conversation_job("generate_report", session.id)
+            else:
+                send_whatsapp_message(phone, "No problem — tell me more or send more photos. Reply 'generate' whenever you're ready.")
+
+        elif session.status == "AWAITING_SUBMIT":
+            if control == "POSITIVE":
+                self._submit_session(session, phone)
+            elif control == "NEGATIVE":
+                send_whatsapp_message(phone, "Okay, I won't submit yet. Tell me what to add or change.")
+            else:
+                # user sent extra info while a report was already generated -> go collect more
+                # CHANGED: reset ready_prompt_sent so the "ready" prompt can fire again later
+                session.status = "COLLECTING"
+                session.ready_prompt_sent = False
+                session.save()
+                send_whatsapp_message(phone, "Got it, noted. Reply 'generate' again when you're ready to remake the report.")
+
+    def _submit_session(self, session, phone):
+        report = session.generated_report or {}
+
+        while True:
+            candidate_id = f"AWZ-{random.randint(10000, 99999)}"
+            if not MasterIncident.objects.filter(tracking_id=candidate_id).exists():
+                tracking_id = candidate_id
+                break
+
+        target_authority = report.get("target_authority") or "KMC"
+        if target_authority not in dict(MasterIncident.AUTHORITY_CHOICES):
+            target_authority = "KMC"
+        severity = report.get("severity") or "P1"
+        if severity not in dict(MasterIncident.SEVERITY_CHOICES):
+            severity = "P1"
+
+        master_incident = MasterIncident.objects.create(
+            tracking_id=tracking_id,
+            target_authority=target_authority,
+            issue_category=report.get("issue_category") or "Civic Complaint",
+            severity=severity,
+            official_status="PENDING",
+            lat=session.lat,
+            lng=session.lng,
+            landmark=session.landmark_text or report.get("landmark") or "Karachi",
+            community_reports_count=1,
+        )
+
+        ComplaintDossier.objects.create(
+            master_incident=master_incident,
+            statutory_citations=report.get("statutory_citations", ""),
+            subject_en=report.get("subject_en", ""),
+            body_en=report.get("body_en", ""),
+            body_ur=report.get("body_ur", ""),
+        )
+
+        session.status = "SUBMITTED"
+        session.is_active = False
+        session.save()
+
+        send_whatsapp_message(
+            phone,
+            f"✅ Your complaint has been submitted!\nTracking ID: {tracking_id}\n"
+            f"Department: {target_authority}\nYou can send a new report anytime.",
+        )
+
+
+# ============================================================================
+# 5. Internal Conversation APIs (used by the AI worker)
+# ============================================================================
+
+class ConversationSessionDetailView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = GenericResponseEnvelopeSerializer
+
+    def get(self, request, session_id):
+        session = ConversationSession.objects.filter(id=session_id).first()
+        if not session:
+            return Response(envelope(error={"code": "NOT_FOUND", "message": "Session not found"}), status=status.HTTP_404_NOT_FOUND)
 
         return Response(
-            envelope(data={"job_id": job_id}),
+            envelope(
+                data={
+                    "session_id": str(session.id),
+                    "phone": session.phone,
+                    "status": session.status,
+                    "collected_texts": session.collected_texts,
+                    "lat": session.lat,
+                    "lng": session.lng,
+                    "landmark_text": session.landmark_text,
+                }
+            ),
             status=status.HTTP_200_OK,
         )
+
+
+from django.db import transaction
+
+class ConversationAttachmentAnalyzedView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = GenericResponseEnvelopeSerializer
+
+    def post(self, request, session_id, attachment_id):
+        attachment = SessionAttachment.objects.filter(id=attachment_id, session_id=session_id).first()
+        if not attachment:
+            return Response(envelope(error={"code": "NOT_FOUND", "message": "Attachment not found"}), status=status.HTTP_404_NOT_FOUND)
+
+        extracted_info = request.data.get("extracted_info", "")
+        attachment.extracted_info = extracted_info
+        attachment.analyzed = True
+        attachment.save()
+
+        with transaction.atomic():
+            # select_for_update locks this session row so a second, concurrent
+            # image-analysis callback has to WAIT here until we're done deciding.
+            session = ConversationSession.objects.select_for_update().get(id=session_id)
+            if extracted_info:
+                session.collected_texts.append(f"[Photo shows]: {extracted_info}")
+                session.save()
+            WhatsAppInboundView()._advance_conversation(session, control=None, phone=session.phone, has_new_image=False)
+
+        return Response(envelope(data={"received": True}), status=status.HTTP_200_OK)
+
+
+class ConversationReportGeneratedView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = GenericResponseEnvelopeSerializer
+
+    def post(self, request, session_id):
+        session = ConversationSession.objects.filter(id=session_id).first()
+        if not session:
+            return Response(envelope(error={"code": "NOT_FOUND", "message": "Session not found"}), status=status.HTTP_404_NOT_FOUND)
+
+        report = request.data
+        session.generated_report = report
+        session.status = "AWAITING_SUBMIT"
+        session.save()
+
+        summary = report.get("layman_summary", "Your report is ready.")
+        send_whatsapp_message(session.phone, f"{summary}\n\nReply YES to submit this complaint, or NO if you'd like to change something.")
+
+        return Response(envelope(data={"received": True}), status=status.HTTP_200_OK)

@@ -240,3 +240,20 @@ KNOWN_KARACHI_LANDMARKS = [
     "Korangi Road", "Shahrah-e-Pakistan", "I.I. Chundrigar Road", "S.M. Taufeeq Road",
     "National Highway", "Hub River Road", "Manghopir Road", "Stadium Road"
 ]
+
+
+CONVERSATION_QUEUE_NAME = "conversation_queue"
+
+
+def resolve_internal_image_url(image_url: str) -> str:
+    """
+    BUG FIX: never trust the host inside image_url (it could be a public
+    Cloudflare/Vercel domain the worker can't reach). Always rebuild the URL
+    using MAIN_SERVICE_URL, which is the address the worker actually uses to
+    talk to the Django service.
+    """
+    from urllib.parse import urlparse
+    if not image_url:
+        return image_url
+    path = urlparse(image_url).path
+    return f"{MAIN_SERVICE_URL}{path}"

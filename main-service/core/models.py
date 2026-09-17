@@ -118,3 +118,61 @@ class ComplaintDossier(models.Model):
 
     def __str__(self):
         return f"Dossier for {self.master_incident.tracking_id}"
+
+class ConversationSession(models.Model):
+    """
+    Holds one 'in progress' WhatsApp complaint conversation for a phone number.
+    A phone number has AT MOST ONE active (is_active=True) session at a time.
+    When a report is submitted or discarded, is_active becomes False and it
+    becomes history - so we can look up "what was my last report" later.
+    """
+
+    STATUS_CHOICES = [
+        ("COLLECTING", "Collecting problem/location/photos"),
+        ("AWAITING_CONFIRM_REPORT", "Asked user: generate report now?"),
+        ("AWAITING_SUBMIT", "Report generated, asked user: submit?"),
+        ("SUBMITTED", "Submitted to DB"),
+        ("DISCARDED", "User started a new report, this one was dropped"),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    phone = models.CharField(max_length=32, db_index=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(max_length=30, choices=STATUS_CHOICES, default="COLLECTING")
+
+    # Everything the user has typed so far (problem descriptions, extra notes, etc.)
+    collected_texts = models.JSONField(default=list, blank=True)
+
+    lat = models.FloatField(null=True, blank=True)
+    lng = models.FloatField(null=True, blank=True)
+    landmark_text = models.CharField(max_length=255, null=True, blank=True)
+
+    # Filled in once the AI worker generates the dossier
+    generated_report = models.JSONField(null=True, blank=True)
+
+    is_active = models.BooleanField(default=True, db_index=True)
+    ready_prompt_sent = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    discarded_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Session {self.id} ({self.phone}) [{self.status}]"
+
+
+class SessionAttachment(models.Model):
+    """One photo the user sent during a conversation session."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    session = models.ForeignKey(ConversationSession, on_delete=models.CASCADE, related_name="attachments")
+    image_file = models.FileField(upload_to="conversation_images/")
+    extracted_info = models.TextField(blank=True, default="")
+    analyzed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Attachment {self.id} for session {self.session_id}"

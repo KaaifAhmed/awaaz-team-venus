@@ -304,7 +304,8 @@ async def gemini_multimodal_perception_node(state: JobState) -> Dict[str, Any]:
             if image_url:
                 try:
                     import base64
-                    resolved_url = image_url.replace("localhost:8000", "main-service:8000").replace("127.0.0.1:8000", "main-service:8000")
+                    from config import resolve_internal_image_url
+                    resolved_url = resolve_internal_image_url(image_url)
                     async with httpx.AsyncClient(timeout=5.0) as img_client:
                         img_resp = await img_client.get(resolved_url)
                         if img_resp.status_code == 200:

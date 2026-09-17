@@ -22,6 +22,7 @@ CSRF_TRUSTED_ORIGINS = [
 CSRF_TRUSTED_ORIGINS.append("https://*.trycloudflare.com")
 CSRF_TRUSTED_ORIGINS.append("https://team-venus-frontend.vercel.app/")
 
+WHATSAPP_SERVICE_URL = os.environ.get("WHATSAPP_SERVICE_URL", "http://localhost:3000").rstrip("/")
 
 
 INSTALLED_APPS = [
