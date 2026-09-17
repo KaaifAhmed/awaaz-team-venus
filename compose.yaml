@@ -52,7 +52,7 @@ services:
     volumes:
       - ./main-service:/app
       - media_data:/app/media
-    command: [ "sh", "-c", "python manage.py migrate && python manage.py seed_demo_users && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --reload" ]
+    command: [ "sh", "-c", "python manage.py migrate && python manage.py seed_demo_users && python manage.py runserver 0.0.0.0:8000" ]
 
   ai-worker:
     build:

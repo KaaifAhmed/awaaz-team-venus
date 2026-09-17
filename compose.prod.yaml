@@ -57,8 +57,7 @@
       - "8000:8000"
     volumes:
       - media_data:/app/media
-    command: ["sh", "-c", "python manage.py collectstatic --noinput && python manage.py migrate && python manage.py seed_demo_users && gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120"]
-
+    command: [ "sh", "-c", "python manage.py migrate && python manage.py seed_demo_users && python manage.py runserver 0.0.0.0:8000" ]
   ai-worker:
     build:
       context: .

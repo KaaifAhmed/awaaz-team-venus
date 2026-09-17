@@ -40,12 +40,17 @@ redis_client = redis.from_url(
 
 
 def enqueue_intent_classification_job(session, text):
+    # A location can be either a typed area name OR GPS coordinates - the AI
+    # needs to know if EITHER is present, not just the typed name.
+    location_summary = session.landmark_text or (
+        f"GPS coordinates {session.lat}, {session.lng}" if session.lat is not None else None
+    )
     enqueue_conversation_job(
         "classify_intent",
         session.id,
         new_text=text,
         collected_texts=session.collected_texts,
-        landmark_text=session.landmark_text,
+        landmark_text=location_summary,
         session_status=session.status,
         has_image=session.attachments.exists(),
     )
@@ -857,7 +862,6 @@ class WhatsAppInboundView(APIView):
         has_problem_text = len(session.collected_texts) > 0
         has_image = session.attachments.exists()
         has_location = session.lat is not None or bool(session.landmark_text)
-        # We now require BOTH a description AND a photo, plus location, before offering to generate.
         is_complete = has_problem_text and has_image and has_location
 
         if session.status == "COLLECTING":
@@ -882,13 +886,13 @@ class WhatsAppInboundView(APIView):
             elif not has_location:
                 send_whatsapp_message(phone, "Please apni location bhejein (current location share karein, ya area ka naam likhein, jese Gulshan Iqbal).")
 
-            elif session.status == "AWAITING_CONFIRM_REPORT":
-                if control == "GENERATE":
-                    send_whatsapp_message(phone, "Aapki report banayi ja rahi hai, thoda intezar karein...")
-                    fallback_landmark = session.landmark_text or (
-                        f"GPS coordinates {session.lat}, {session.lng}" if session.lat else "Karachi"
-                    )
-                    enqueue_conversation_job("generate_report", session.id, fallback_landmark=fallback_landmark)
+        elif session.status == "AWAITING_CONFIRM_REPORT":
+            if control == "GENERATE":
+                send_whatsapp_message(phone, "Aapki report banayi ja rahi hai, thoda intezar karein...")
+                fallback_landmark = session.landmark_text or (
+                    f"GPS coordinates {session.lat}, {session.lng}" if session.lat else "Karachi"
+                )
+                enqueue_conversation_job("generate_report", session.id, fallback_landmark=fallback_landmark)
             elif control in ("PROBLEM", "LOCATION"):
                 pass
             else:
@@ -906,7 +910,6 @@ class WhatsAppInboundView(APIView):
                 send_whatsapp_message(phone, "Noted, shukriya. Jab report dobara banwani ho to bata dein.")
 
     def _build_recap(self, session):
-        """Repeats back what we understood so far, like a human clerk confirming before writing anything."""
         problem_summary = " ".join(session.collected_texts) if session.collected_texts else "(masla nahi bataya gaya)"
         location = session.landmark_text or f"GPS ({session.lat}, {session.lng})" if session.lat else "(location nahi mili)"
         photo_count = session.attachments.count()

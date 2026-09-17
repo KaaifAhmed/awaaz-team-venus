@@ -1,5 +1,6 @@
 from django.contrib import admin
-from django.utils.html import format_html
+from django.core.serializers import python
+from django.utils.html import format_html, format_html_join
 
 from .models import ComplaintDossier, ConversationSession, Incident, JobBuffer, MasterIncident, SessionAttachment
 
@@ -40,15 +41,19 @@ class MasterIncidentAdmin(admin.ModelAdmin):
 class IncidentAdmin(admin.ModelAdmin):
     list_display = ("id", "master_incident", "user", "created_at")
 
-
 @admin.register(ComplaintDossier)
 class ComplaintDossierAdmin(admin.ModelAdmin):
     list_display = ("master_incident", "subject_en", "created_at")
-    readonly_fields = ("raw_citizen_text_display", "photos_display")
+
+    readonly_fields = (
+        "raw_citizen_text_display",
+        "photos_display",
+    )
+
     fields = (
         "master_incident",
-        "raw_citizen_text_display",   # what the citizen actually said - shown first, read-only
-        "photos_display",             # every photo the citizen sent - shown right after
+        "raw_citizen_text_display",
+        "photos_display",
         "raw_citizen_text",
         "statutory_citations",
         "subject_en",
@@ -59,20 +64,39 @@ class ComplaintDossierAdmin(admin.ModelAdmin):
 
     def raw_citizen_text_display(self, obj):
         return format_html(
-            '<div style="white-space: pre-wrap; background:#222; color:#eee; padding:10px; border-radius:6px;">{}</div>',
+            '<div style="white-space: pre-wrap; background:#222; color:#eee; '
+            'padding:10px; border-radius:6px;">{}</div>',
             obj.raw_citizen_text or "(no text provided)",
         )
+
     raw_citizen_text_display.short_description = "What the citizen actually reported"
 
     def photos_display(self, obj):
-        photos = obj.master_incident.photos.all() if obj.master_incident_id else []
-        if not photos:
+        if not obj.master_incident_id:
+            return "(no master incident)"
+
+        photos = obj.master_incident.photos.all()
+
+        if not photos.exists():
             return "(no photos)"
-        html = ""
-        for photo in photos:
-            html += format_html('<img src="{}" style="max-height: 220px; max-width: 300px; margin: 5px;" />', photo.image_file.url)
-        return format_html(html)
+
+        return format_html(
+            "<div>{}</div>",
+            format_html_join(
+                "",
+                '<div style="display:inline-block; margin:5px;">'
+                '<img src="{}" style="max-height:220px; max-width:300px;" />'
+                "</div>",
+                (
+                    (photo.image_file.url,)
+                    for photo in photos
+                    if photo.image_file
+                ),
+            ),
+        )
+
     photos_display.short_description = "Photos the citizen sent"
+
 
 
 @admin.register(ConversationSession)
