@@ -282,6 +282,7 @@ class ReportConfirmView(APIView):
         ComplaintDossier.objects.create(
             master_incident=master_incident,
             statutory_citations=job.statutory_citations or "",
+            raw_citizen_text=job.raw_text or "(no text provided)",
             subject_en=job.draft_subject_en or f"Civic Grievance - {master_incident.issue_category}",
             body_en=job.draft_body_en or job.raw_text,
             body_ur=job.draft_body_ur or "",
@@ -832,19 +833,23 @@ class WhatsAppInboundView(APIView):
             image_url = request.build_absolute_uri(attachment.image_file.url)
             enqueue_conversation_job("analyze_image", session.id, attachment_id=str(attachment.id), image_url=image_url)
 
+                # ---- Save GPS location if present ----
+        location_just_received = False
         if lat is not None and lng is not None:
             session.lat = lat
             session.lng = lng
             session.save()
+            location_just_received = True
 
         # ---- For text, hand off the "what does this mean" decision to the AI worker ----
         if text:
             enqueue_intent_classification_job(session, text)
-
-        # If there was an image but no text, the image analysis callback will
-        # already trigger _advance_conversation once it comes back.
-        if not text and image_content_file:
+        elif image_content_file:
             send_whatsapp_message(phone, "Aapki photo mil gayi hai! Main dekh raha hoon.")
+        elif location_just_received:
+            # No AI needed here - this is pure business logic (confirming a fact was saved).
+            send_whatsapp_message(phone, "📍 Location mil gayi, shukriya!")
+            self._advance_conversation(session, control="OTHER", phone=phone, has_new_image=False)
 
         return Response(envelope(data={"session_id": str(session.id)}), status=status.HTTP_200_OK)
     
@@ -937,13 +942,20 @@ class WhatsAppInboundView(APIView):
             community_reports_count=1,
         )
 
+        # Save exactly what the citizen said, in their own words, so the officer can read it directly.
+        raw_citizen_text = "\n".join(session.collected_texts) if session.collected_texts else "(no text provided)"
+
         ComplaintDossier.objects.create(
             master_incident=master_incident,
             statutory_citations=report.get("statutory_citations", ""),
+            raw_citizen_text=raw_citizen_text,
             subject_en=report.get("subject_en", ""),
             body_en=report.get("body_en", ""),
             body_ur=report.get("body_ur", ""),
         )
+
+        # Link every photo the citizen sent in this session to the incident, so it shows up in admin.
+        session.attachments.update(master_incident=master_incident)
 
         session.status = "SUBMITTED"
         session.is_active = False

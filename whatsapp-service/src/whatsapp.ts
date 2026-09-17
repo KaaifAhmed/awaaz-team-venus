@@ -124,7 +124,11 @@ class WhatsAppService {
       const imageMsg = unpacked.imageMessage || message.imageMessage;
       const audioMsg = unpacked.audioMessage || message.audioMessage || unpacked.voiceMessage;
       const videoMsg = unpacked.videoMessage || message.videoMessage;
-      const locationMsg = unpacked.locationMessage || message.locationMessage;
+      const locationMsg =
+        unpacked.locationMessage ||
+        message.locationMessage ||
+        unpacked.liveLocationMessage ||
+        message.liveLocationMessage;
 
       const text =
         unpacked.conversation ||
@@ -136,6 +140,12 @@ class WhatsAppService {
         "";
 
       const phone = remoteJid.replace("@s.whatsapp.net", "");
+
+      if (locationMsg) {
+        console.log(`Location received from ${phone}: lat=${locationMsg.degreesLatitude}, lng=${locationMsg.degreesLongitude}`);
+      } else if (!text && !imageMsg && !audioMsg && !videoMsg) {
+        console.log(`Message from ${phone} has no text/image/audio/video/location. Raw keys:`, Object.keys(unpacked));
+      }
 
       let mediaBase64: string | null = null;
       let mediaType: string | null = null;

@@ -109,6 +109,7 @@ class ComplaintDossier(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     master_incident = models.OneToOneField(MasterIncident, on_delete=models.CASCADE, related_name="dossier")
     statutory_citations = models.TextField(blank=True, default="")
+    raw_citizen_text = models.TextField(blank=True, default="")   # ADD: citizen's own words, exactly as typed
     subject_en = models.CharField(max_length=255, blank=True, default="")
     body_en = models.TextField(blank=True, default="")
     body_ur = models.TextField(blank=True, default="")
@@ -169,6 +170,7 @@ class SessionAttachment(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     session = models.ForeignKey(ConversationSession, on_delete=models.CASCADE, related_name="attachments")
+    master_incident = models.ForeignKey(MasterIncident, on_delete=models.SET_NULL, null=True, blank=True, related_name="photos")  # ADD THIS
     image_file = models.FileField(upload_to="conversation_images/")
     extracted_info = models.TextField(blank=True, default="")
     analyzed = models.BooleanField(default=False)
