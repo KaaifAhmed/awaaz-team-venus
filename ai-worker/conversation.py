@@ -52,6 +52,9 @@ class ConvState(TypedDict, total=False):
     lng: Optional[float]
     generated_report: Optional[Dict[str, Any]]
 
+    has_image: Optional[bool]
+    reply: Optional[str]
+
 
 # ============================================================================
 # NODE 1: describe a photo with Gemini vision
@@ -129,17 +132,58 @@ async def generate_report_node(state: ConvState) -> Dict[str, Any]:
 
     combined_text = " ".join(state.get("collected_texts") or [])
     landmark_hint = state.get("landmark_text") or ""
-    perception = deterministic_rule_based_perception(combined_text, landmark_hint)
+
+    issue_category = "Pothole / Road Damage"
+    severity = "P1"
+    detected_landmark = landmark_hint or "Karachi"
+    core_problem = combined_text or "Civic issue reported."
+
+    if GEMINI_API_KEY:
+        prompt = (
+            "You are the Awaaz Civic AI Perception Model for Karachi. Read the citizen's full "
+            "complaint below (may be English/Urdu/Roman Urdu, may include fire, safety, or any "
+            "civic hazard) and extract facts. Do not guess a category if it clearly doesn't fit - "
+            "use 'Other' if none of the listed categories match (e.g. fire, crime, medical emergency).\n\n"
+            f"Full complaint text:\n{combined_text}\n\n"
+            f"Location given: {landmark_hint or 'not specified'}\n\n"
+            "Return STRICT JSON only:\n"
+            '{"issue_category": one of ["Sewerage","Water Supply","Pothole / Road Damage",'
+            '"Drainage Overflow","Solid Waste / Garbage","Street Light / Electric Hazard","Other"], '
+            '"severity": "P0 (life-threatening/emergency) or P1 (major) or P2 (minor)", '
+            '"detected_landmark": "...", "core_problem": "one factual sentence"}'
+        )
+        for model in CANDIDATE_MODELS:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
+            try:
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    resp = await client.post(
+                        url,
+                        json={
+                            "contents": [{"parts": [{"text": prompt}]}],
+                            "generationConfig": {"temperature": 0.1, "responseMimeType": "application/json"},
+                        },
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        raw = data["candidates"][0]["content"]["parts"][0]["text"]
+                        parsed = json.loads(raw)
+                        issue_category = parsed.get("issue_category", issue_category)
+                        severity = parsed.get("severity", severity)
+                        detected_landmark = parsed.get("detected_landmark") or detected_landmark
+                        core_problem = parsed.get("core_problem", core_problem)
+                        break
+            except Exception as exc:
+                logger.warning(f"[REPORT-AI] Model {model} failed: {exc}")
 
     partial_state = {
         "lat": state.get("lat") or 24.9180,
         "lng": state.get("lng") or 67.0971,
-        "landmark": perception["detected_landmark"],
+        "landmark": detected_landmark,
         "landmark_hint": landmark_hint,
         "raw_text": combined_text,
-        "issue_category": perception["issue_category"],
-        "severity": perception["severity"],
-        "core_problem": perception["core_problem"],
+        "issue_category": issue_category,
+        "severity": severity,
+        "core_problem": core_problem,
         "security_blocked": False,
     }
 
@@ -150,7 +194,6 @@ async def generate_report_node(state: ConvState) -> Dict[str, Any]:
     partial_state.update(dossier)
 
     return {"generated_report": partial_state}
-
 
 # ============================================================================
 # NODE 4: send the result back to Django
@@ -175,7 +218,7 @@ async def post_result_node(state: ConvState) -> Dict[str, Any]:
         elif state.get("job_type") == "classify_intent":
             await client.post(
                 f"{MAIN_SERVICE_URL}/api/internal/conversation/{session_id}/intent-classified",
-                json={"intent": state.get("intent", "OTHER"), "text": state.get("new_text", "")},
+                json={"intent": state.get("intent", "OTHER"), "text": state.get("new_text", ""), "reply": state.get("reply")},
             )
 
     return {}
@@ -188,32 +231,40 @@ async def classify_intent_node(state: ConvState) -> Dict[str, Any]:
     text = state.get("new_text", "")
     collected_texts = state.get("collected_texts") or []
     landmark_text = state.get("landmark_text") or "(not given yet)"
+    has_image = state.get("has_image", False)
     session_status = state.get("session_status", "COLLECTING")
 
     history_lines = [f"- {t}" for t in collected_texts]
     history_text = "\n".join(history_lines) if history_lines else "(nothing yet)"
 
     intent = "OTHER"
+    reply_text = None
 
     if GEMINI_API_KEY:
         prompt = (
-            "You are reading a WhatsApp conversation where a citizen in Karachi is reporting a civic "
-            "problem (pothole, sewage, garbage, water, electric hazard, etc). Messages can be in "
-            "English, Urdu, or Roman Urdu, and may contain typos.\n\n"
-            f"What the user already told us about the problem:\n{history_text}\n\n"
+            "You are Awaaz, a friendly civic assistant on WhatsApp helping a citizen in Karachi "
+            "report a problem (pothole, sewage, garbage, water, electric hazard, fire, etc). "
+            "Messages can be English, Urdu, or Roman Urdu, and may have typos. "
+            "Talk naturally like a helpful human clerk, not a script.\n\n"
+            f"Conversation so far (problem details already given):\n{history_text}\n\n"
             f"Location already given: {landmark_text}\n"
-            f"Current conversation stage: {session_status}\n\n"
+            f"Photo already sent: {'yes' if has_image else 'no'}\n"
+            f"Current stage: {session_status}\n\n"
             f"New message just received: \"{text}\"\n\n"
-            "Classify this new message into EXACTLY ONE of these categories:\n"
-            "RESTART - user wants to discard everything and start reporting a different/new issue\n"
-            "GENERATE - user wants the report prepared now (any phrasing: 'generate', 'genrate', "
-            "'report bnado', 'banado', 'ready karo', 'now do it', etc)\n"
-            "SUBMIT_YES - user is agreeing to submit the report that was already shown to them\n"
+            "Step 1 - Classify this new message into EXACTLY ONE category:\n"
+            "GREETING - just a hello/hi/salam/asalamualaikum with no complaint content\n"
+            "RESTART - user wants to discard everything and report a different/new issue\n"
+            "GENERATE - user wants the report prepared now (any phrasing, typos ok)\n"
+            "SUBMIT_YES - user agrees to submit the report already shown to them\n"
             "SUBMIT_NO - user does NOT want to submit yet / wants to change something\n"
             "LOCATION - this message is giving a location / area / landmark\n"
-            "PROBLEM - this message is describing the civic problem or adding detail about it\n"
-            "OTHER - greeting, unclear, small talk, anything that doesn't fit above\n\n"
-            'Reply with ONLY this JSON, nothing else: {"intent": "ONE_OF_THE_CATEGORIES_ABOVE"}'
+            "PROBLEM - this message describes the civic problem or adds detail about it\n"
+            "OTHER - unclear or small talk\n\n"
+            "Step 2 - If category is GREETING or OTHER, write a short, warm, natural reply in Roman Urdu "
+            "(1-2 sentences) that responds to what they actually said, referencing the conversation so far "
+            "if relevant. If it's GREETING, greet back and ask what problem they'd like to report. "
+            "For any other category, leave reply as empty string - our system will handle the response.\n\n"
+            'Reply with ONLY this JSON: {"intent": "...", "reply": "..."}'
         )
 
         for model in CANDIDATE_MODELS:
@@ -224,7 +275,7 @@ async def classify_intent_node(state: ConvState) -> Dict[str, Any]:
                         url,
                         json={
                             "contents": [{"parts": [{"text": prompt}]}],
-                            "generationConfig": {"temperature": 0.0, "responseMimeType": "application/json"},
+                            "generationConfig": {"temperature": 0.3, "responseMimeType": "application/json"},
                         },
                     )
                     if resp.status_code == 200:
@@ -232,14 +283,15 @@ async def classify_intent_node(state: ConvState) -> Dict[str, Any]:
                         raw = data["candidates"][0]["content"]["parts"][0]["text"]
                         parsed = json.loads(raw)
                         candidate_intent = parsed.get("intent", "OTHER")
-                        valid_intents = {"RESTART", "GENERATE", "SUBMIT_YES", "SUBMIT_NO", "LOCATION", "PROBLEM", "OTHER"}
+                        valid_intents = {"GREETING", "RESTART", "GENERATE", "SUBMIT_YES", "SUBMIT_NO", "LOCATION", "PROBLEM", "OTHER"}
                         if candidate_intent in valid_intents:
                             intent = candidate_intent
+                            reply_text = parsed.get("reply") or None
                             break
             except Exception as exc:
                 logger.warning(f"[INTENT] Model {model} failed: {exc}")
 
-    return {"intent": intent}
+    return {"intent": intent, "reply": reply_text}
 
 # ============================================================================
 # GRAPH ASSEMBLY - simple, linear, easy to follow

@@ -40,8 +40,6 @@ redis_client = redis.from_url(
 
 
 def enqueue_intent_classification_job(session, text):
-    """Ask the AI worker to read the conversation history + this new message
-    and tell us what the user means. Django does NOT call any AI model itself."""
     enqueue_conversation_job(
         "classify_intent",
         session.id,
@@ -49,6 +47,7 @@ def enqueue_intent_classification_job(session, text):
         collected_texts=session.collected_texts,
         landmark_text=session.landmark_text,
         session_status=session.status,
+        has_image=session.attachments.exists(),
     )
 
 
@@ -850,49 +849,65 @@ class WhatsAppInboundView(APIView):
         return Response(envelope(data={"session_id": str(session.id)}), status=status.HTTP_200_OK)
     
     def _advance_conversation(self, session, control, phone, has_new_image):
-        has_problem = len(session.collected_texts) > 0 or session.attachments.exists()
+        has_problem_text = len(session.collected_texts) > 0
+        has_image = session.attachments.exists()
         has_location = session.lat is not None or bool(session.landmark_text)
+        # We now require BOTH a description AND a photo, plus location, before offering to generate.
+        is_complete = has_problem_text and has_image and has_location
 
         if session.status == "COLLECTING":
-            if has_new_image and not (has_problem and has_location):
+            if has_new_image and not is_complete:
                 send_whatsapp_message(phone, "Aapki photo mil gayi hai! Main dekh raha hoon.")
 
-            if has_problem and has_location:
+            if is_complete:
                 if not session.ready_prompt_sent:
                     session.status = "AWAITING_CONFIRM_REPORT"
                     session.ready_prompt_sent = True
                     session.save()
+                    recap = self._build_recap(session)
                     send_whatsapp_message(
                         phone,
-                        "Mujhe masla aur location dono mil gaye hain. Agar report banwani hai to bata dein "
-                        "(jese 'generate' ya 'report bnado'), ya phir aur tafseel/photos bhejte rahein.",
+                        f"{recap}\n\nAgar yeh sahi hai aur report banwani hai to bata dein "
+                        "(jese 'generate' ya 'report bnado'), ya aur tafseel/photo bhejte rahein.",
                     )
-            elif has_problem and not has_location:
-                send_whatsapp_message(phone, "Theek hai. Ab please apni location bhejein (current location share karein, ya area ka naam likhein, jese Gulshan Iqbal).")
-            elif has_location and not has_problem:
-                send_whatsapp_message(phone, "Location mil gayi, shukriya. Ab please masla bataen, ya uski photo bhej dein.")
-            else:
-                send_whatsapp_message(phone, "Please apna civic masla bataen (ya uski photo bhej dein).")
+            elif not has_problem_text:
+                send_whatsapp_message(phone, "Please masla bataen ke kya hua hai.")
+            elif not has_image:
+                send_whatsapp_message(phone, "Please us jagah ki photo bhej dein taake main tasdeeq kar sakoon.")
+            elif not has_location:
+                send_whatsapp_message(phone, "Please apni location bhejein (current location share karein, ya area ka naam likhein, jese Gulshan Iqbal).")
 
         elif session.status == "AWAITING_CONFIRM_REPORT":
-            if control == "GENERATE":                          # ✅ fixed
+            if control == "GENERATE":
                 send_whatsapp_message(phone, "Aapki report banayi ja rahi hai, thoda intezar karein...")
                 enqueue_conversation_job("generate_report", session.id)
             elif control in ("PROBLEM", "LOCATION"):
-                pass  # quietly accept extra info, don't repeat the same prompt
+                pass
             else:
                 send_whatsapp_message(phone, "Jab report banwani ho, bata dein (jese 'generate' ya 'report bnado').")
 
         elif session.status == "AWAITING_SUBMIT":
-            if control == "SUBMIT_YES":                        # ✅ fixed
+            if control == "SUBMIT_YES":
                 self._submit_session(session, phone)
-            elif control == "SUBMIT_NO":                       # ✅ fixed
+            elif control == "SUBMIT_NO":
                 send_whatsapp_message(phone, "Theek hai, abhi submit nahi karta. Bata dein kya add ya change karna hai.")
             else:
                 session.status = "COLLECTING"
                 session.ready_prompt_sent = False
                 session.save()
                 send_whatsapp_message(phone, "Noted, shukriya. Jab report dobara banwani ho to bata dein.")
+
+    def _build_recap(self, session):
+        """Repeats back what we understood so far, like a human clerk confirming before writing anything."""
+        problem_summary = " ".join(session.collected_texts) if session.collected_texts else "(masla nahi bataya gaya)"
+        location = session.landmark_text or f"GPS ({session.lat}, {session.lng})" if session.lat else "(location nahi mili)"
+        photo_count = session.attachments.count()
+        return (
+            "Yeh maine ab tak samjha hai:\n"
+            f"📝 Masla: {problem_summary}\n"
+            f"📍 Location: {location}\n"
+            f"📷 Photos: {photo_count}"
+        )
 
     def _submit_session(self, session, phone):
         report = session.generated_report or {}
@@ -1026,13 +1041,21 @@ class ConversationIntentClassifiedView(APIView):
 
         intent = request.data.get("intent", "OTHER")
         text = request.data.get("text", "")
+        ai_reply = request.data.get("reply")
 
-        # ---- Business-logic decision based on the AI worker's label. No AI called here. ----
         if intent == "RESTART":
             discard_session(session)
             new_session = ConversationSession.objects.create(phone=session.phone, user=session.user, status="COLLECTING")
             send_whatsapp_message(session.phone, "Theek hai, nayi report shuru karte hain. Please masla batayein, ya photo bhej dein.")
             return Response(envelope(data={"session_id": str(new_session.id)}), status=status.HTTP_200_OK)
+
+        if intent in ("GREETING", "OTHER"):
+            # Let the AI's natural, history-aware reply handle this - no silent drop, no fixed script.
+            if ai_reply:
+                send_whatsapp_message(session.phone, ai_reply)
+            else:
+                send_whatsapp_message(session.phone, "Ji, kya masla report karna chahte hain?")
+            return Response(envelope(data={"received": True}), status=status.HTTP_200_OK)
 
         if intent == "LOCATION" and text:
             session.landmark_text = text
