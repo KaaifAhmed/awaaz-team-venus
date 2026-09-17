@@ -13,7 +13,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import ComplaintDossier, Incident, JobBuffer, MasterIncident
+from .models import ComplaintDossier, Incident, JobBuffer, MasterIncident , ConversationSession, SessionAttachment
 from .serializers import (
     ComplaintStatusUpdateRequestSerializer,
     GenericResponseEnvelopeSerializer,
@@ -26,8 +26,7 @@ from .spatial_data import SPATIAL_BOUNDARIES
 
 import logging
 import requests
-
-from .models import ConversationSession, SessionAttachment  # add to existing "from .models import ..." line
+from django.db import transaction
 
 logger = logging.getLogger(__name__)
 
@@ -39,16 +38,19 @@ redis_client = redis.from_url(
     decode_responses=True,
 )
 
-GREETING_WORDS = {
-    "hello", "hi", "hey", "salam", "assalamualaikum", "asalam", "aoa",
-    "salaam", "hy", "helo", "start", "test"
-}
 
+def enqueue_intent_classification_job(session, text):
+    """Ask the AI worker to read the conversation history + this new message
+    and tell us what the user means. Django does NOT call any AI model itself."""
+    enqueue_conversation_job(
+        "classify_intent",
+        session.id,
+        new_text=text,
+        collected_texts=session.collected_texts,
+        landmark_text=session.landmark_text,
+        session_status=session.status,
+    )
 
-def is_just_a_greeting(text):
-    lowered = (text or "").strip().lower()
-    words = lowered.split()
-    return len(words) <= 2 and all(w.strip("!.,?") in GREETING_WORDS for w in words)
 
 def enqueue_conversation_job(job_type, session_id, **extra):
     """Push a small task for the AI worker's conversation graph to pick up."""
@@ -81,38 +83,6 @@ def discard_session(session):
     session.discarded_at = timezone.now()
     session.save()
 
-
-# --- Very small, easy to read "does this message mean yes/no/restart?" checker ---
-RESTART_PHRASES = ["new report", "new complaint", "naya report", "naya complaint", "start over", "start new"]
-POSITIVE_WORDS = {"yes", "yeah", "yep", "haan", "ji", "ok", "okay", "confirm", "submit", "generate", "proceed", "ready", "done"}
-NEGATIVE_WORDS = {"no", "nahi", "nope", "cancel", "wait", "more"}
-
-
-def classify_control_word(text):
-    """Returns 'RESTART', 'POSITIVE', 'NEGATIVE' or None (meaning: normal content)."""
-    lowered = (text or "").strip().lower()
-    if not lowered:
-        return None
-    for phrase in RESTART_PHRASES:
-        if phrase in lowered:
-            return "RESTART"
-    # Only treat SHORT messages as a yes/no control word, so a long complaint
-    # sentence containing the word "no" somewhere isn't misread as a control word.
-    if len(lowered.split()) <= 3:
-        if lowered in POSITIVE_WORDS:
-            return "POSITIVE"
-        if lowered in NEGATIVE_WORDS:
-            return "NEGATIVE"
-    return None
-
-
-def looks_like_a_short_location(text, session):
-    """Heuristic: if we already have a problem description but no location yet,
-    and this new message is short (<=6 words), treat it as the location."""
-    word_count = len((text or "").split())
-    already_has_problem = len(session.collected_texts) > 0 or session.attachments.exists()
-    missing_location = session.lat is None and not session.landmark_text
-    return already_has_problem and missing_location and 0 < word_count <= 6
 
 def envelope(data=None, error=None):
     return {
@@ -822,7 +792,7 @@ class WhatsAppInboundView(APIView):
             lat = None
             lng = None
 
-        # ---- Decode any attached photo ----
+        # ---- Decode any attached photo (business logic: just saving a file) ----
         media_base64 = data.get("media_base64") or data.get("image_base64")
         media_type = data.get("media_type") or ""
         image_content_file = None
@@ -837,7 +807,7 @@ class WhatsAppInboundView(APIView):
             except Exception as b64_err:
                 logger.warning(f"[WHATSAPP-INBOUND] Failed to decode image attachment: {b64_err}")
 
-        # ---- Find/create the citizen user (same as before) ----
+        # ---- Find/create the citizen user (business logic) ----
         user = User.objects.filter(primary_phone=phone).first() or User.objects.filter(username=phone).first()
         if not user:
             from users.models import LinkedPhone
@@ -852,21 +822,12 @@ class WhatsAppInboundView(APIView):
                 role="CITIZEN",
             )
 
-        # ---- Step 1: figure out what the user MEANT with this message ----
-        control = classify_control_word(text)
-
-        # ---- Step 2: get (or start) the active conversation session ----
+        # ---- Get or start the active session (business logic, no AI here) ----
         session = get_active_session(phone)
-
-        if control == "RESTART" or session is None:
-            if session is not None:
-                discard_session(session)
+        if session is None:
             session = ConversationSession.objects.create(phone=phone, user=user, status="COLLECTING")
-            if control == "RESTART":
-                send_whatsapp_message(phone, "Theek hai, nayi report shuru karte hain. Please masla batayein, ya photo bhej dein.")
-                return Response(envelope(data={"session_id": str(session.id)}), status=status.HTTP_200_OK)
 
-        # ---- Step 3: save whatever the user sent into the session ----
+        # ---- Save the non-text parts right away (image, GPS) ----
         if image_content_file:
             attachment = SessionAttachment.objects.create(session=session, image_file=image_content_file)
             image_url = request.build_absolute_uri(attachment.image_file.url)
@@ -875,22 +836,19 @@ class WhatsAppInboundView(APIView):
         if lat is not None and lng is not None:
             session.lat = lat
             session.lng = lng
+            session.save()
 
-        if text and control is None:
-            if is_just_a_greeting(text):
-                pass
-            elif looks_like_a_short_location(text, session):
-                session.landmark_text = text
-            else:
-                session.collected_texts.append(text)
+        # ---- For text, hand off the "what does this mean" decision to the AI worker ----
+        if text:
+            enqueue_intent_classification_job(session, text)
 
-        session.save()
-
-        # ---- Step 4: run the simple state machine and decide what to say back ----
-        self._advance_conversation(session, control, phone, has_new_image=bool(image_content_file))
+        # If there was an image but no text, the image analysis callback will
+        # already trigger _advance_conversation once it comes back.
+        if not text and image_content_file:
+            send_whatsapp_message(phone, "Aapki photo mil gayi hai! Main dekh raha hoon.")
 
         return Response(envelope(data={"session_id": str(session.id)}), status=status.HTTP_200_OK)
-
+    
     def _advance_conversation(self, session, control, phone, has_new_image):
         has_problem = len(session.collected_texts) > 0 or session.attachments.exists()
         has_location = session.lat is not None or bool(session.landmark_text)
@@ -906,8 +864,8 @@ class WhatsAppInboundView(APIView):
                     session.save()
                     send_whatsapp_message(
                         phone,
-                        "Mujhe masla aur location dono mil gaye hain. Agar report banwani hai to 'generate' likh dein, "
-                        "ya phir aur tafseel/photos bhejte rahein.",
+                        "Mujhe masla aur location dono mil gaye hain. Agar report banwani hai to bata dein "
+                        "(jese 'generate' ya 'report bnado'), ya phir aur tafseel/photos bhejte rahein.",
                     )
             elif has_problem and not has_location:
                 send_whatsapp_message(phone, "Theek hai. Ab please apni location bhejein (current location share karein, ya area ka naam likhein, jese Gulshan Iqbal).")
@@ -917,22 +875,24 @@ class WhatsAppInboundView(APIView):
                 send_whatsapp_message(phone, "Please apna civic masla bataen (ya uski photo bhej dein).")
 
         elif session.status == "AWAITING_CONFIRM_REPORT":
-            if control == "POSITIVE":
+            if control == "GENERATE":                          # ✅ fixed
                 send_whatsapp_message(phone, "Aapki report banayi ja rahi hai, thoda intezar karein...")
                 enqueue_conversation_job("generate_report", session.id)
+            elif control in ("PROBLEM", "LOCATION"):
+                pass  # quietly accept extra info, don't repeat the same prompt
             else:
-                send_whatsapp_message(phone, "Theek hai, aur bata dein ya photo bhej dein. Jab tayyar hon to 'generate' likh dein.")
+                send_whatsapp_message(phone, "Jab report banwani ho, bata dein (jese 'generate' ya 'report bnado').")
 
         elif session.status == "AWAITING_SUBMIT":
-            if control == "POSITIVE":
+            if control == "SUBMIT_YES":                        # ✅ fixed
                 self._submit_session(session, phone)
-            elif control == "NEGATIVE":
+            elif control == "SUBMIT_NO":                       # ✅ fixed
                 send_whatsapp_message(phone, "Theek hai, abhi submit nahi karta. Bata dein kya add ya change karna hai.")
             else:
                 session.status = "COLLECTING"
                 session.ready_prompt_sent = False
                 session.save()
-                send_whatsapp_message(phone, "Noted, shukriya. Jab report dobara banwani ho to 'generate' likh dein.")
+                send_whatsapp_message(phone, "Noted, shukriya. Jab report dobara banwani ho to bata dein.")
 
     def _submit_session(self, session, phone):
         report = session.generated_report or {}
@@ -1009,7 +969,6 @@ class ConversationSessionDetailView(APIView):
         )
 
 
-from django.db import transaction
 
 class ConversationAttachmentAnalyzedView(APIView):
     permission_classes = [AllowAny]
@@ -1032,7 +991,7 @@ class ConversationAttachmentAnalyzedView(APIView):
             if extracted_info:
                 session.collected_texts.append(f"[Photo shows]: {extracted_info}")
                 session.save()
-            WhatsAppInboundView()._advance_conversation(session, control=None, phone=session.phone, has_new_image=False)
+            WhatsAppInboundView()._advance_conversation(session, control="OTHER", phone=session.phone, has_new_image=False)
 
         return Response(envelope(data={"received": True}), status=status.HTTP_200_OK)
 
@@ -1053,4 +1012,35 @@ class ConversationReportGeneratedView(APIView):
 
         summary = report.get("layman_summary", "Your report is ready.")
         send_whatsapp_message(session.phone, f"{summary}\n\nAgar submit karna hai to YES likhein, ya kuch change karna hai to NO.")
+        return Response(envelope(data={"received": True}), status=status.HTTP_200_OK)
+
+
+class ConversationIntentClassifiedView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = GenericResponseEnvelopeSerializer
+
+    def post(self, request, session_id):
+        session = ConversationSession.objects.filter(id=session_id).first()
+        if not session:
+            return Response(envelope(error={"code": "NOT_FOUND", "message": "Session not found"}), status=status.HTTP_404_NOT_FOUND)
+
+        intent = request.data.get("intent", "OTHER")
+        text = request.data.get("text", "")
+
+        # ---- Business-logic decision based on the AI worker's label. No AI called here. ----
+        if intent == "RESTART":
+            discard_session(session)
+            new_session = ConversationSession.objects.create(phone=session.phone, user=session.user, status="COLLECTING")
+            send_whatsapp_message(session.phone, "Theek hai, nayi report shuru karte hain. Please masla batayein, ya photo bhej dein.")
+            return Response(envelope(data={"session_id": str(new_session.id)}), status=status.HTTP_200_OK)
+
+        if intent == "LOCATION" and text:
+            session.landmark_text = text
+            session.save()
+        elif intent == "PROBLEM" and text:
+            session.collected_texts.append(text)
+            session.save()
+
+        WhatsAppInboundView()._advance_conversation(session, intent, session.phone, has_new_image=False)
+
         return Response(envelope(data={"received": True}), status=status.HTTP_200_OK)

@@ -40,11 +40,16 @@ class ConvState(TypedDict, total=False):
     image_url: Optional[str]
     extracted_info: Optional[str]
 
-    # generate_report job
+    # classify_intent job
+    new_text: Optional[str]
     collected_texts: List[str]
+    landmark_text: Optional[str]
+    session_status: Optional[str]
+    intent: Optional[str]
+
+    # generate_report job
     lat: Optional[float]
     lng: Optional[float]
-    landmark_text: Optional[str]
     generated_report: Optional[Dict[str, Any]]
 
 
@@ -167,9 +172,74 @@ async def post_result_node(state: ConvState) -> Dict[str, Any]:
                 f"{MAIN_SERVICE_URL}/api/internal/conversation/{session_id}/report-generated",
                 json=report,
             )
+        elif state.get("job_type") == "classify_intent":
+            await client.post(
+                f"{MAIN_SERVICE_URL}/api/internal/conversation/{session_id}/intent-classified",
+                json={"intent": state.get("intent", "OTHER"), "text": state.get("new_text", "")},
+            )
 
     return {}
 
+
+async def classify_intent_node(state: ConvState) -> Dict[str, Any]:
+    if state.get("job_type") != "classify_intent":
+        return {}
+
+    text = state.get("new_text", "")
+    collected_texts = state.get("collected_texts") or []
+    landmark_text = state.get("landmark_text") or "(not given yet)"
+    session_status = state.get("session_status", "COLLECTING")
+
+    history_lines = [f"- {t}" for t in collected_texts]
+    history_text = "\n".join(history_lines) if history_lines else "(nothing yet)"
+
+    intent = "OTHER"
+
+    if GEMINI_API_KEY:
+        prompt = (
+            "You are reading a WhatsApp conversation where a citizen in Karachi is reporting a civic "
+            "problem (pothole, sewage, garbage, water, electric hazard, etc). Messages can be in "
+            "English, Urdu, or Roman Urdu, and may contain typos.\n\n"
+            f"What the user already told us about the problem:\n{history_text}\n\n"
+            f"Location already given: {landmark_text}\n"
+            f"Current conversation stage: {session_status}\n\n"
+            f"New message just received: \"{text}\"\n\n"
+            "Classify this new message into EXACTLY ONE of these categories:\n"
+            "RESTART - user wants to discard everything and start reporting a different/new issue\n"
+            "GENERATE - user wants the report prepared now (any phrasing: 'generate', 'genrate', "
+            "'report bnado', 'banado', 'ready karo', 'now do it', etc)\n"
+            "SUBMIT_YES - user is agreeing to submit the report that was already shown to them\n"
+            "SUBMIT_NO - user does NOT want to submit yet / wants to change something\n"
+            "LOCATION - this message is giving a location / area / landmark\n"
+            "PROBLEM - this message is describing the civic problem or adding detail about it\n"
+            "OTHER - greeting, unclear, small talk, anything that doesn't fit above\n\n"
+            'Reply with ONLY this JSON, nothing else: {"intent": "ONE_OF_THE_CATEGORIES_ABOVE"}'
+        )
+
+        for model in CANDIDATE_MODELS:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
+            try:
+                async with httpx.AsyncClient(timeout=8.0) as client:
+                    resp = await client.post(
+                        url,
+                        json={
+                            "contents": [{"parts": [{"text": prompt}]}],
+                            "generationConfig": {"temperature": 0.0, "responseMimeType": "application/json"},
+                        },
+                    )
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        raw = data["candidates"][0]["content"]["parts"][0]["text"]
+                        parsed = json.loads(raw)
+                        candidate_intent = parsed.get("intent", "OTHER")
+                        valid_intents = {"RESTART", "GENERATE", "SUBMIT_YES", "SUBMIT_NO", "LOCATION", "PROBLEM", "OTHER"}
+                        if candidate_intent in valid_intents:
+                            intent = candidate_intent
+                            break
+            except Exception as exc:
+                logger.warning(f"[INTENT] Model {model} failed: {exc}")
+
+    return {"intent": intent}
 
 # ============================================================================
 # GRAPH ASSEMBLY - simple, linear, easy to follow
@@ -178,12 +248,14 @@ async def post_result_node(state: ConvState) -> Dict[str, Any]:
 def build_conversation_graph():
     workflow = StateGraph(ConvState)
     workflow.add_node("analyze_image", analyze_image_node)
+    workflow.add_node("classify_intent", classify_intent_node)   # add
     workflow.add_node("fetch_session", fetch_session_node)
     workflow.add_node("generate_report", generate_report_node)
     workflow.add_node("post_result", post_result_node)
 
     workflow.set_entry_point("analyze_image")
-    workflow.add_edge("analyze_image", "fetch_session")
+    workflow.add_edge("analyze_image", "classify_intent")        # add
+    workflow.add_edge("classify_intent", "fetch_session")        # changed
     workflow.add_edge("fetch_session", "generate_report")
     workflow.add_edge("generate_report", "post_result")
     workflow.add_edge("post_result", END)

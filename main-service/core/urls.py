@@ -19,6 +19,7 @@ from .views import (
     ConversationSessionDetailView,          # add
     ConversationAttachmentAnalyzedView,      # add
     ConversationReportGeneratedView,
+    ConversationIntentClassifiedView,
 )
 
 urlpatterns = [
@@ -49,4 +50,5 @@ urlpatterns = [
     path("internal/conversation/<uuid:session_id>", ConversationSessionDetailView.as_view(), name="conversation_detail"),
     path("internal/conversation/<uuid:session_id>/attachment/<uuid:attachment_id>/analyzed", ConversationAttachmentAnalyzedView.as_view(), name="conversation_attachment_analyzed"),
     path("internal/conversation/<uuid:session_id>/report-generated", ConversationReportGeneratedView.as_view(), name="conversation_report_generated"),
+    path("internal/conversation/<uuid:session_id>/intent-classified", ConversationIntentClassifiedView.as_view(), name="conversation_intent_classified"),
 ]
